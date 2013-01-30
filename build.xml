@@ -41,7 +41,7 @@
 			<attribute name="Built-Date" value="${DSTAMP}"/>
 		</manifest>
 
-		<jar destfile="${dist}/nsapi.jar" manifest="manifest.mf">
+		<jar destfile="${dist}/nsapi-${version}.jar" manifest="manifest.mf">
 			<zipfileset dir="${build}" includes="${basepath}/**"/>
 		</jar>
 		<!-- Finished jar-->
