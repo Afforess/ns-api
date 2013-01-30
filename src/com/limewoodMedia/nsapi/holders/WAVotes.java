@@ -30,4 +30,11 @@ package com.limewoodMedia.nsapi.holders;
 public class WAVotes {
 	public int forVotes;
 	public int againstVotes;
+	
+	public WAVotes() {}
+	
+	public WAVotes(int forVotes, int againstVotes) {
+		this.forVotes = forVotes;
+		this.againstVotes = againstVotes;
+	}
 }

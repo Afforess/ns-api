@@ -39,11 +39,11 @@ public class RegionData {
 	public static enum Shards implements IShards {
 		NAME("name"),
 		FLAG("flag"),
-		HAPPENINGS("happenings"),
-		MESSAGES("messages"),
 		DELEGATE("delegate"),
 		FOUNDER("founder"),
 		FACTBOOK("factbook"),
+		HAPPENINGS("happenings"),
+		MESSAGES("messages"),
 		NUM_NATIONS("numnations"),
 		NATIONS("nations"),
 		DELEGATE_VOTES("delegatevotes"),

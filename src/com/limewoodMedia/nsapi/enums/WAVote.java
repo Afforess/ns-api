@@ -46,4 +46,8 @@ public enum WAVote {
 	private WAVote(String name) {
 		this.name = name;
 	}
+	
+	public String getName() {
+		return name;
+	}
 }
