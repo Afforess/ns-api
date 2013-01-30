@@ -60,6 +60,7 @@ import org.xmlpull.v1.XmlPullParserException;
  */
 public class NSAPI implements INSAPI {
 	public static final String API = "http://www.nationstates.net/cgi-bin/api.cgi";
+	public static final String API_USER_AGENT = "Java NSAPI library by Laevendell (code.google.com/p/ns-api/); ";
 	public static final int RATE_LIMIT = 49; // One lower to be on the safe side
 	
 	private static INSAPI instance;
@@ -80,7 +81,7 @@ public class NSAPI implements INSAPI {
 	 * @see com.limewoodMedia.nsapi.INSAPI#setUserAgent(java.lang.String)
 	 */
 	public void setUserAgent(String userAgent) {
-		this.userAgent = "Java NSAPI library; " + userAgent;
+		this.userAgent = API_USER_AGENT + userAgent;
 	}
 
 	/*
