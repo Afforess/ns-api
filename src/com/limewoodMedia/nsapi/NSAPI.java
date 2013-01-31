@@ -29,6 +29,7 @@ import com.limewoodMedia.nsapi.exceptions.RateLimitReachedException;
 import com.limewoodMedia.nsapi.exceptions.UnknownNationException;
 import com.limewoodMedia.nsapi.exceptions.UnknownRegionException;
 import com.limewoodMedia.nsapi.holders.Budget;
+import com.limewoodMedia.nsapi.holders.Embassy;
 import com.limewoodMedia.nsapi.holders.NSData;
 import com.limewoodMedia.nsapi.holders.NationData;
 import com.limewoodMedia.nsapi.holders.NationFreedoms;
@@ -49,6 +50,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.params.ClientPNames;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreProtocolPNames;
 import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -73,23 +81,54 @@ public class NSAPI implements INSAPI {
 	}
 	
 	private Queue<Date> calls = new ConcurrentLinkedQueue<Date>();
-	public String userAgent = null;
-	public int version = -1;
+	private String userAgent = null;
+	private int version = -1;
+	private boolean useHttpClient = false;
 
 	/*
 	 * (non-Javadoc)
 	 * @see com.limewoodMedia.nsapi.INSAPI#setUserAgent(java.lang.String)
 	 */
+	@Override
 	public void setUserAgent(String userAgent) {
 		this.userAgent = API_USER_AGENT + userAgent;
 	}
 
 	/*
 	 * (non-Javadoc)
+	 * @see com.limewoodMedia.nsapi.INSAPI#getUserAgent()
+	 */
+	@Override
+	public String getUserAgent() {
+		return userAgent;
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see com.limewoodMedia.nsapi.INSAPI#setVersion(int)
 	 */
+	@Override
 	public void setVersion(int version) {
 		this.version = version;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.limewoodMedia.nsapi.INSAPI#getVersion()
+	 */
+	@Override
+	public int getVersion() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.limewoodMedia.nsapi.INSAPI#setUseHttpClient(boolean)
+	 */
+	@Override
+	public void setUseHttpClient(boolean b) {
+		useHttpClient = b;
 	}
 
 	/**
@@ -124,6 +163,7 @@ public class NSAPI implements INSAPI {
 	 * (non-Javadoc)
 	 * @see com.limewoodMedia.nsapi.INSAPI#getNationInfo(java.lang.String, com.limewoodMedia.nsapi.holders.NationData.Shards[])
 	 */
+	@Override
 	public NationData getNationInfo(String name, NationData.Shards...shards)
 			throws XmlPullParserException, IOException, RateLimitReachedException, UnknownNationException {
 		if (!makeCall()) {
@@ -491,6 +531,7 @@ public class NSAPI implements INSAPI {
 	 * (non-Javadoc)
 	 * @see com.limewoodMedia.nsapi.INSAPI#getRegionInfo(java.lang.String, com.limewoodMedia.nsapi.holders.RegionData.Shards[])
 	 */
+	@Override
 	public RegionData getRegionInfo(String name, RegionData.Shards...shards)
 		throws XmlPullParserException, IOException, RateLimitReachedException, UnknownRegionException {
 		if (!makeCall()) {
@@ -660,16 +701,20 @@ public class NSAPI implements INSAPI {
 		return votes;
 	}
 
-	private List<String> parseEmbassies(XmlPullParser xpp)
+	private List<Embassy> parseEmbassies(XmlPullParser xpp)
 		throws NumberFormatException, XmlPullParserException, IOException {
 		String tagName = null;
-		List<String> embassies = new ArrayList<String>();
+		Embassy embassy = null;
+		List<Embassy> embassies = new ArrayList<Embassy>();
 		loop: while (xpp.next() != XmlPullParser.END_DOCUMENT) {
 			switch (xpp.getEventType()) {
 			case XmlPullParser.START_TAG:
 				tagName = xpp.getName().toLowerCase();
 				if (tagName.equals(RegionData.Shards.SubTags.EMBASSIES_EMBASSY.getTag())) {
-					embassies.add(xpp.nextText());
+					embassy = new Embassy();
+					embassy.region = xpp.nextText();
+					embassy.status = Embassy.EmbassyStatus.parse(xpp.getAttributeValue(null, "type"));
+					embassies.add(embassy);
 				}
 				break;
 			case XmlPullParser.END_TAG:
@@ -723,11 +768,25 @@ public class NSAPI implements INSAPI {
 				arguments += "+" + arg.getName();
 			}
 		}
-		URL url = new URL(API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
-				"&q=" + arguments);
-		URLConnection conn = url.openConnection();
-		conn.setRequestProperty("User-Agent", this.userAgent);
-		InputStream stream = conn.getInputStream();
+		String str = API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
+				"&q=" + arguments;
+		
+		InputStream stream = null;
+		if(useHttpClient) {
+			HttpClient client = new DefaultHttpClient();
+			client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
+			client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
+			HttpGet get = new HttpGet(str);
+			HttpResponse response = client.execute(get);
+			stream = response.getEntity().getContent();
+		}
+		else {
+			URL url = new URL(str);
+			URLConnection conn = url.openConnection();
+			conn.setRequestProperty("User-Agent", this.userAgent);
+			stream = conn.getInputStream();
+		}
+		
 		xpp.setInput(stream, null);
 		return new NSData(xpp, stream);
 	}

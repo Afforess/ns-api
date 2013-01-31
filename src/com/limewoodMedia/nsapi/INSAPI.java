@@ -42,12 +42,28 @@ public interface INSAPI {
 	 * @param userAgent the User-Agent string to use
 	 */
 	public void setUserAgent(String userAgent);
+	
+	/**
+	 * @return the User-Agent
+	 */
+	public String getUserAgent();
 
 	/**
 	 * Sets version of the NationStates API to use
 	 * @param version the version of the NS API to use
 	 */
 	public void setVersion(int version);
+	
+	/**
+	 * @return the currently used version
+	 */
+	public int getVersion();
+	
+	/**
+	 * Set whether to use Apache HttpClient or URLConnection
+	 * @param true for HttpClient, false for URLConnection
+	 */
+	public void setUseHttpClient(boolean b);
 
 	public NationData getNationInfo(String name, NationData.Shards...arguments)
 			throws XmlPullParserException, IOException, RateLimitReachedException, UnknownNationException;

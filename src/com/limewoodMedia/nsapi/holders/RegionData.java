@@ -106,6 +106,6 @@ public class RegionData {
 	public WAVotes generalAssemblyVotes;
 	public WAVotes securityCouncilVotes;
 	public String power;
-	public List<String> embassies;
+	public List<Embassy> embassies;
 	public List<String> tags;
 }

@@ -11,7 +11,7 @@
 	<property name="lib" value="lib"/>
 	<property name="basepath" value="com/limewoodMedia/nsapi"/>
 	
-	<property name="version" value="0.1"/>
+	<property name="version" value="0.2"/>
 
 	<target name="init">
 		<!-- Create the time stamp -->
@@ -26,7 +26,7 @@
 		description="compile the source " >
 		<!-- Compile the java code from ${src} into ${build} -->
 		<javac srcdir="${src}" destdir="${build}" target="1.6" source="1.6"
-			classpath="${lib}/kxml2-min-2.3.0.jar"/>
+			classpath="${lib}/kxml2-min-2.3.0.jar;${lib}/httpclient-4.0-beta1.jar;${lib}/httpcore-4.0-beta1.jar"/>
 	</target>
 
 	<target name="dist" depends="compile"
