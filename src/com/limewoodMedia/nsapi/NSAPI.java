@@ -409,8 +409,10 @@ public class NSAPI implements INSAPI {
 				break;
 			}
 		int i = legislation.lastIndexOf("||&&||");
-		legislation = legislation.substring(0, i).replace("||&&||", ",") +
-				legislation.substring(i).replace("||&&||", " and");
+		if(i > -1) {
+			legislation = legislation.substring(0, i).replace("||&&||", ",") +
+					legislation.substring(i).replace("||&&||", " and");
+		}
 		return legislation;
 	}
 
