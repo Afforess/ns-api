@@ -25,6 +25,7 @@ package com.limewoodMedia.nsapi.holders;
 import com.limewoodMedia.nsapi.enums.Categories;
 import com.limewoodMedia.nsapi.enums.CauseOfDeath;
 import com.limewoodMedia.nsapi.enums.IShards;
+import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class NationData {
 		LEGISLATION("legislation"),
 		HAPPENINGS("happenings"),
 		TYPE("type"),
-		WA_MEMBERSHIP("wa", "unstatus"),
+		WA_STATUS("wa", "unstatus"),
 		ENDORSEMENTS("endorsements"),
 		GA_VOTE("gavote"),
 		SC_VOTE("scvote"),
@@ -172,7 +173,7 @@ public class NationData {
 	public String legislation;
 	public List<NationHappening> happenings;
 	public String type;
-	public boolean worldAssemblyMember;
+	public WAStatus worldAssemblyStatus;
 	public String[] endorsements;
 	public WAVote generalAssemblyVote;
 	public WAVote securityCouncilVote;

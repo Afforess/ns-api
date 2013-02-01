@@ -24,6 +24,7 @@ package com.limewoodMedia.nsapi;
 
 import com.limewoodMedia.nsapi.enums.CauseOfDeath;
 import com.limewoodMedia.nsapi.enums.IShards;
+import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
 import com.limewoodMedia.nsapi.exceptions.RateLimitReachedException;
 import com.limewoodMedia.nsapi.exceptions.UnknownNationException;
@@ -118,8 +119,7 @@ public class NSAPI implements INSAPI {
 	 */
 	@Override
 	public int getVersion() {
-		// TODO Auto-generated method stub
-		return 0;
+		return version;
 	}
 	
 	/*
@@ -256,8 +256,8 @@ public class NSAPI implements INSAPI {
 					else if (tagName.equals(NationData.Shards.TYPE.getTag())) {
 						nation.type = xpp.nextText();
 					}
-					else if (tagName.equals(NationData.Shards.WA_MEMBERSHIP.getTag())) {
-						nation.worldAssemblyMember = xpp.nextText().equalsIgnoreCase("WA Member");
+					else if (tagName.equals(NationData.Shards.WA_STATUS.getTag())) {
+						nation.worldAssemblyStatus = WAStatus.parse(xpp.nextText());
 					}
 					else if (tagName.equals(NationData.Shards.ENDORSEMENTS.getTag())) {
 						nation.endorsements = xpp.nextText().split(",");
