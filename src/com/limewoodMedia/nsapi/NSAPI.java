@@ -714,8 +714,8 @@ public class NSAPI implements INSAPI {
 				tagName = xpp.getName().toLowerCase();
 				if (tagName.equals(RegionData.Shards.SubTags.EMBASSIES_EMBASSY.getTag())) {
 					embassy = new Embassy();
-					embassy.region = xpp.nextText();
 					embassy.status = Embassy.EmbassyStatus.parse(xpp.getAttributeValue(null, "type"));
+					embassy.region = xpp.nextText();
 					embassies.add(embassy);
 				}
 				break;

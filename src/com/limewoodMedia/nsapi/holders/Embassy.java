@@ -21,7 +21,7 @@ public class Embassy {
 				if(description == null) {
 					return ESTABLISHED;
 				}
-				else if(es.description.equalsIgnoreCase(description)) {
+				else if(description.equalsIgnoreCase(es.description)) {
 					return es;
 				}
 			}
