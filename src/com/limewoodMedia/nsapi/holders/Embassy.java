@@ -14,7 +14,9 @@ public class Embassy {
 		/** An embassy this region requested with another region */
 		REQUESTED("requested"),
 		/** An requested embassy that was denied recently */
-		DENIED("denied");
+		DENIED("denied"),
+		/** An embassy that was recently closed */
+		CLOSING("closing");
 		
 		public static EmbassyStatus parse(String description) {
 			for(EmbassyStatus es : values()) {
