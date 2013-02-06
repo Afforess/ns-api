@@ -23,10 +23,19 @@
 package com.limewoodMedia.nsapi.exceptions;
 
 /**
- * An exception indicating that the NS API rate limit has been reached (but not exceeded)
+ * An exception indicating that the requested nation could not be found
  * @author Joakim Lindskog
  *
  */
-public class RateLimitReachedException extends Exception {
-	private static final long serialVersionUID = -1921022462294128042L;
+public class UnknownNationException extends RuntimeException {
+	private static final long serialVersionUID = 1L;
+	private String nation;
+
+	public UnknownNationException(String nation) {
+		this.nation = nation;
+	}
+
+	public String getNation() {
+		return this.nation;
+	}
 }

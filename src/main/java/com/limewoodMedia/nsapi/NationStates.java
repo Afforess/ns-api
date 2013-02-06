@@ -41,8 +41,6 @@ import com.limewoodMedia.nsapi.holders.RegionHappening;
 import com.limewoodMedia.nsapi.holders.WAVotes;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -67,68 +65,48 @@ import org.xmlpull.v1.XmlPullParserException;
  * @author Joakim Lindskog
  *
  */
-public class NSAPI implements INSAPI {
+public class NationStates {
 	public static final String API = "http://www.nationstates.net/cgi-bin/api.cgi";
 	public static final String API_USER_AGENT = "Java NSAPI library by Laevendell (code.google.com/p/ns-api/); ";
 	public static final int RATE_LIMIT = 49; // One lower to be on the safe side
-	
-	private static INSAPI instance;
 
-	public static synchronized INSAPI getInstance() {
-		if(instance == null) {
-			instance = new NSAPI();
-		}
-		return instance;
+	public NationStates() {
+		
 	}
-	
-	private Queue<Date> calls = new ConcurrentLinkedQueue<Date>();
+
+	private final Queue<Date> calls = new ConcurrentLinkedQueue<Date>();
 	private String userAgent = null;
 	private int version = -1;
-	private boolean useHttpClient = false;
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#setUserAgent(java.lang.String)
+	/**
+	 * Sets the User-Agent header
+	 * Note: this needs to be set to be able to access the API
+	 * @param userAgent the User-Agent string to use
 	 */
-	@Override
 	public void setUserAgent(String userAgent) {
 		this.userAgent = API_USER_AGENT + userAgent;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#getUserAgent()
+	/**
+	 * @return the User-Agent
 	 */
-	@Override
 	public String getUserAgent() {
 		return userAgent;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#setVersion(int)
+	/**
+	 * Sets version of the NationStates API to use
+	 * @param version the version of the NS API to use
 	 */
-	@Override
 	public void setVersion(int version) {
 		this.version = version;
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#getVersion()
+	/**
+	 * @return the currently used version
 	 */
-	@Override
 	public int getVersion() {
 		return version;
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#setUseHttpClient(boolean)
-	 */
-	@Override
-	public void setUseHttpClient(boolean b) {
-		useHttpClient = b;
 	}
 
 	/**
@@ -141,7 +119,7 @@ public class NSAPI implements INSAPI {
 			throw new IllegalArgumentException("No User-Agent set! Use NSAPI.getInstance().setUserAgent(String).");
 		}
 		synchronized (this.calls) {
-			if(this.calls.size() < 49) {
+			if(this.calls.size() < RATE_LIMIT) {
 				this.calls.add(new Date());
 				return true;
 			}
@@ -151,7 +129,7 @@ public class NSAPI implements INSAPI {
 			for(Date d = this.calls.peek(); !this.calls.isEmpty() && d.before(now); d = this.calls.peek()) {
 				this.calls.poll();
 			}
-			if(this.calls.size() < 49) {
+			if(this.calls.size() < RATE_LIMIT) {
 				this.calls.add(new Date());
 				return true;
 			}
@@ -159,13 +137,7 @@ public class NSAPI implements INSAPI {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#getNationInfo(java.lang.String, com.limewoodMedia.nsapi.holders.NationData.Shards[])
-	 */
-	@Override
-	public NationData getNationInfo(String name, NationData.Shards...shards)
-			throws XmlPullParserException, IOException, RateLimitReachedException, UnknownNationException {
+	public NationData getNationInfo(String name, NationData.Shards...shards) {
 		if (!makeCall()) {
 			throw new RateLimitReachedException();
 		}
@@ -307,10 +279,17 @@ public class NSAPI implements INSAPI {
 					else if (tagName.equals(NationData.Shards.CAPITAL.getTag())) {
 						nation.capital = xpp.nextText();
 					}
+					else {
+						System.err.println("Unknown nation tag: " + tagName);
+					}
 					break;
 				}
 			}
 			return nation;
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException("Failed to parse XML", e);
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing XML", e);
 		}
 		finally {
 			if (data != null) {
@@ -343,6 +322,9 @@ public class NSAPI implements INSAPI {
 				else if (tagName.equals(NationData.Shards.SubTags.FREEDOMS_POLITICAL_FREEDOM.getTag())) {
 					freedoms.politicalFreedoms = xpp.nextText();
 				}
+				else {
+					System.err.println("Unknown freedom tag: " + tagName);
+				}
 				break;
 			case XmlPullParser.END_TAG:
 				tagName = xpp.getName().toLowerCase();
@@ -371,6 +353,9 @@ public class NSAPI implements INSAPI {
 				}
 				else if (tagName.equals(NationData.Shards.SubTags.FREEDOMS_POLITICAL_FREEDOM.getTag())) {
 					freedoms.politicalFreedomsValue = Integer.parseInt(xpp.nextText());
+				}
+				else {
+					System.err.println("Unknown freedom score tag: " + tagName);
 				}
 				break;
 			case XmlPullParser.END_TAG:
@@ -491,6 +476,9 @@ public class NSAPI implements INSAPI {
 				else if (tagName.equals(NationData.Shards.SubTags.BUDGET_COMMERCE.getTag())) {
 					budget.commerce = value;
 				}
+				else {
+					System.err.println("Unknown budget tag: " + tagName);
+				}
 				break;
 			case XmlPullParser.END_TAG:
 				tagName = xpp.getName().toLowerCase();
@@ -533,7 +521,6 @@ public class NSAPI implements INSAPI {
 	 * (non-Javadoc)
 	 * @see com.limewoodMedia.nsapi.INSAPI#getRegionInfo(java.lang.String, com.limewoodMedia.nsapi.holders.RegionData.Shards[])
 	 */
-	@Override
 	public RegionData getRegionInfo(String name, RegionData.Shards...shards)
 		throws XmlPullParserException, IOException, RateLimitReachedException, UnknownRegionException {
 		if (!makeCall()) {
@@ -598,6 +585,9 @@ public class NSAPI implements INSAPI {
 					}
 					else if (tagName.equals(RegionData.Shards.TAGS.getTag())) {
 						region.tags = parseTags(xpp);
+					}
+					else {
+						System.err.println("Unknown region tag: " + tagName);
 					}
 					break;
 				}
@@ -692,6 +682,9 @@ public class NSAPI implements INSAPI {
 				else if (tagName.equals(RegionData.Shards.SubTags.WA_VOTES_AGAINST.getTag())) {
 					votes.againstVotes = Integer.parseInt(xpp.nextText());
 				}
+				else {
+					System.err.println("Unknown WA voting tag: " + tagName);
+				}
 				break;
 			case XmlPullParser.END_TAG:
 				tagName = xpp.getName().toLowerCase();
@@ -774,21 +767,12 @@ public class NSAPI implements INSAPI {
 				"&q=" + arguments;
 		
 		InputStream stream = null;
-		if(useHttpClient) {
-			HttpClient client = new DefaultHttpClient();
-			client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
-			client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
-			HttpGet get = new HttpGet(str);
-			HttpResponse response = client.execute(get);
-			stream = response.getEntity().getContent();
-		}
-		else {
-			URL url = new URL(str);
-			URLConnection conn = url.openConnection();
-			conn.setRequestProperty("User-Agent", this.userAgent);
-			stream = conn.getInputStream();
-		}
-		
+		HttpClient client = new DefaultHttpClient();
+		client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
+		client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
+		HttpGet get = new HttpGet(str);
+		HttpResponse response = client.execute(get);
+		stream = response.getEntity().getContent();
 		xpp.setInput(stream, null);
 		return new NSData(xpp, stream);
 	}

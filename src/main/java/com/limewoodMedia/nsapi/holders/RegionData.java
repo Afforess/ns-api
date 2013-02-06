@@ -23,6 +23,8 @@
 package com.limewoodMedia.nsapi.holders;
 
 import com.limewoodMedia.nsapi.enums.IShards;
+
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -98,14 +100,14 @@ public class RegionData {
 	public String delegate;
 	public String founder;
 	public String factbook;
-	public List<RegionHappening> happenings;
-	public List<RMBMessage> messages;
+	public List<RegionHappening> happenings = Collections.emptyList();
+	public List<RMBMessage> messages = Collections.emptyList();
 	public int numNations;
 	public String[] nations;
 	public int delegateVotes;
 	public WAVotes generalAssemblyVotes;
 	public WAVotes securityCouncilVotes;
 	public String power;
-	public List<Embassy> embassies;
-	public List<String> tags;
+	public List<Embassy> embassies = Collections.emptyList();
+	public List<String> tags = Collections.emptyList();
 }

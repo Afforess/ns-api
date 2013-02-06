@@ -27,8 +27,8 @@ package com.limewoodMedia.nsapi.exceptions;
  * @author Joakim Lindskog
  *
  */
-public class UnknownRegionException extends Exception {
-	private static final long serialVersionUID = -4231497203336988665L;
+public class UnknownRegionException extends RuntimeException {
+	private static final long serialVersionUID = 1L;
 	private String region;
 
 	public UnknownRegionException(String region) {
