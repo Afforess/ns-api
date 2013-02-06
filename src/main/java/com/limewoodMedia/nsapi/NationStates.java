@@ -137,6 +137,14 @@ public class NationStates {
 		}
 	}
 
+	/**
+    * Fetches information on a nation
+    * @param name the nation id
+    * @param arguments the shards to request
+    * @return a NationData object with nation info
+    * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+    * @throws UnknownNationException if the nation could not be found
+    */
 	public NationData getNationInfo(String name, NationData.Shards...shards) {
 		if (!makeCall()) {
 			throw new RateLimitReachedException();
@@ -517,10 +525,14 @@ public class NationStates {
 		return deaths;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.limewoodMedia.nsapi.INSAPI#getRegionInfo(java.lang.String, com.limewoodMedia.nsapi.holders.RegionData.Shards[])
-	 */
+    /**
+     * Fetches information on a region
+     * @param name the region id
+     * @param arguments the shards to request
+     * @return a RegionData object with region info
+     * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+     * @throws UnknownRegionException if the region could not be found
+     */
 	public RegionData getRegionInfo(String name, RegionData.Shards...shards)
 		throws XmlPullParserException, IOException, RateLimitReachedException, UnknownRegionException {
 		if (!makeCall()) {
