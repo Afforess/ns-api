@@ -22,23 +22,14 @@
  */
 package com.limewoodMedia.nsapi.enums;
 
-import java.util.Map;
-
 /**
- * An interface for the Shards
+ * An interface for Shard arguments
  * @author Joakim Lindskog
  *
  */
-public abstract interface IShards {
+public abstract interface IArguments {
 	/**
-	 * @return the name of the shard (as used to request it)
+	 * @return the name of the argument
 	 */
 	public abstract String getName();
-
-	/**
-	 * @return the tag used in the reply from the NS API
-	 */
-	public abstract String getTag();
-	
-	public abstract Map<IArguments, String> getArguments();
 }

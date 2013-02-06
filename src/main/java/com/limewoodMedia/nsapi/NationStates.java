@@ -23,6 +23,7 @@
 package com.limewoodMedia.nsapi;
 
 import com.limewoodMedia.nsapi.enums.CauseOfDeath;
+import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
 import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
@@ -47,6 +48,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -767,24 +769,30 @@ public class NationStates {
 	private synchronized NSData getInfo(String urlStart, IShards...shards)
 			throws XmlPullParserException, IOException {
 		KXmlParser xpp = new KXmlParser();
-		String arguments = null;
-		for (IShards arg : shards) {
-			if(arguments == null) {
-				arguments = arg.getName();
+		String shardsStr = null;
+		for (IShards s : shards) {
+			if(shardsStr == null) {
+				shardsStr = s.getName();
 			} else {
-				arguments += "+" + arg.getName();
+				shardsStr += "+" + s.getName();
+			}
+			if(s.getArguments() != null) {
+				Map<IArguments, String> args = s.getArguments();
+				for(Entry<IArguments, String> a : args.entrySet()) {
+					shardsStr += ";" + a.getKey().getName() + "=" + a.getValue();
+				}
 			}
 		}
 		String str = API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
-				"&q=" + arguments;
+				"&q=" + shardsStr;
 		
-		InputStream stream = null;
 		HttpClient client = new DefaultHttpClient();
 		client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
 		client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
 		HttpGet get = new HttpGet(str);
 		HttpResponse response = client.execute(get);
-		stream = response.getEntity().getContent();
+		InputStream stream = response.getEntity().getContent();
+		
 		xpp.setInput(stream, null);
 		return new NSData(xpp, stream);
 	}

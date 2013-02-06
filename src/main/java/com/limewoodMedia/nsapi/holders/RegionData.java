@@ -22,10 +22,12 @@
  */
 package com.limewoodMedia.nsapi.holders;
 
+import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A data object for region data
@@ -57,6 +59,7 @@ public class RegionData {
 
 		private String name;
 		private String tag;
+		private Map<IArguments, String> arguments;
 
 		private Shards(String name, String tag) {
 			this.name = name;
@@ -73,6 +76,21 @@ public class RegionData {
 
 		public String getTag() {
 			return this.tag;
+		}
+		
+		public Map<IArguments, String> getArguments() {
+			if(arguments != null) {
+				return new HashMap<IArguments, String>(arguments);
+			}
+			return arguments;
+		}
+		
+		public Shards setArgument(Arguments name, String value) {
+			if(arguments == null) {
+				arguments = new HashMap<IArguments, String>();
+			}
+			arguments.put(name, value);
+			return this;
 		}
 
 		public static enum SubTags {
@@ -93,6 +111,20 @@ public class RegionData {
 				return this.tag;
 			}
 		}
+		
+		public static enum Arguments implements IArguments {
+			MESSAGES_OFFSET("offset");
+			
+			private String name;
+
+			private Arguments(String name) {
+				this.name = name;
+			}
+
+			public String getName() {
+				return this.name;
+			}
+		}
 	}
 	
 	public String name;
@@ -100,14 +132,14 @@ public class RegionData {
 	public String delegate;
 	public String founder;
 	public String factbook;
-	public List<RegionHappening> happenings = Collections.emptyList();
-	public List<RMBMessage> messages = Collections.emptyList();
+	public List<RegionHappening> happenings;
+	public List<RMBMessage> messages;
 	public int numNations;
 	public String[] nations;
 	public int delegateVotes;
 	public WAVotes generalAssemblyVotes;
 	public WAVotes securityCouncilVotes;
 	public String power;
-	public List<Embassy> embassies = Collections.emptyList();
-	public List<String> tags = Collections.emptyList();
+	public List<Embassy> embassies;
+	public List<String> tags;
 }

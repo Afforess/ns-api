@@ -24,9 +24,13 @@ package com.limewoodMedia.nsapi.holders;
 
 import com.limewoodMedia.nsapi.enums.Categories;
 import com.limewoodMedia.nsapi.enums.CauseOfDeath;
+import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
 import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
+import com.limewoodMedia.nsapi.holders.RegionData.Shards.Arguments;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -87,6 +91,7 @@ public class NationData {
 
 		private String name;
 		private String tag;
+		private Map<IArguments, String> arguments;
 
 		private Shards(String name, String tag) {
 			this.name = name;
@@ -103,6 +108,21 @@ public class NationData {
 
 		public String getTag() {
 			return this.tag;
+		}
+		
+		public Map<IArguments, String> getArguments() {
+			if(arguments != null) {
+				return new HashMap<IArguments, String>(arguments);
+			}
+			return arguments;
+		}
+		
+		public Shards setArgument(Arguments name, String value) {
+			if(arguments == null) {
+				arguments = new HashMap<IArguments, String>();
+			}
+			arguments.put(name, value);
+			return this;
 		}
 
 		public static enum Attributes {
