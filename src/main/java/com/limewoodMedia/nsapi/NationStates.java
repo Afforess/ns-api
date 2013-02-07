@@ -40,6 +40,8 @@ import com.limewoodMedia.nsapi.holders.RMBMessage;
 import com.limewoodMedia.nsapi.holders.RegionData;
 import com.limewoodMedia.nsapi.holders.RegionHappening;
 import com.limewoodMedia.nsapi.holders.WAVotes;
+import com.limewoodMedia.nsapi.holders.WorldData;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -79,6 +81,23 @@ public class NationStates {
 	private final Queue<Date> calls = new ConcurrentLinkedQueue<Date>();
 	private String userAgent = null;
 	private int version = -1;
+	private boolean verbose = false;
+
+	/**
+	 * Verbose mode does extensive debug logging
+	 * @return verbose
+	 */
+	public boolean isVerbose() {
+		return verbose;
+	}
+
+	/**
+	 * Sets the verbose mode
+	 * @param verbose
+	 */
+	public void setVerbose(boolean verbose) {
+		this.verbose = verbose;
+	}
 
 	/**
 	 * Sets the User-Agent header
@@ -140,6 +159,87 @@ public class NationStates {
 	}
 
 	/**
+    * Fetches information on the world
+    * @param arguments the shards to request
+    * @return a WorldData object with world info
+    * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+    */
+	public WorldData getWorldInfo(WorldData.Shards...shards) {
+		if (!makeCall()) {
+			throw new RateLimitReachedException();
+		}
+		NSData data = null;
+		try {
+			data = getInfo("?", shards);
+			if (verbose) {
+				System.out.println("Parsing World Info");
+			}
+			XmlPullParser xpp = null;
+			xpp = data.xpp;
+			String tagName = null;
+			WorldData world = new WorldData();
+			while (xpp.next() != XmlPullParser.END_DOCUMENT) {
+				switch (xpp.getEventType()) {
+				case XmlPullParser.START_TAG:
+					tagName = xpp.getName().toLowerCase();
+					if (verbose) {
+						System.out.println("Parsing World Tag: " + tagName);
+					}
+					if (tagName.equals(WorldData.Shards.NUM_NATIONS.getTag())) {
+						world.numNations = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WorldData.Shards.NUM_REGIONS.getTag())) {
+						world.numRegions = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WorldData.Shards.CENSUS.getTag())) {
+						world.census = xpp.nextText();
+					}
+					else if (tagName.equals(WorldData.Shards.CENSUS_ID.getTag())) {
+						world.censusId = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WorldData.Shards.CENSUS_SIZE.getTag())) {
+						world.censusSize = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WorldData.Shards.CENSUS_SCALE.getTag())) {
+						world.censusScale = xpp.nextText();
+					}
+					else if (tagName.equals(WorldData.Shards.CENSUS_MEDIAN.getTag())) {
+						world.censusMedian = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WorldData.Shards.FEATURED_REGION.getTag())) {
+						world.featuredRegion = xpp.nextText();
+					}
+					else if (tagName.equals(WorldData.Shards.NEW_NATIONS.getTag())) {
+						world.newNations = xpp.nextText().split(",");
+					}
+					else if (tagName.equals(WorldData.Shards.REGIONS_BY_TAG.getTag())) {
+						world.regionsByTag = xpp.nextText().split(",");
+					}
+					else {
+						System.err.println("Unknown world tag: " + tagName);
+					}
+					break;
+				}
+			}
+			return world;
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException("Failed to parse XML", e);
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing XML", e);
+		}
+		finally {
+			if (data != null) {
+				try {
+					data.stream.close();
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	/**
     * Fetches information on a nation
     * @param name the nation id
     * @param arguments the shards to request
@@ -154,6 +254,9 @@ public class NationStates {
 		NSData data = null;
 		try {
 			data = getInfo("?nation=" + name.replace(' ', '_'), shards);
+			if (verbose) {
+				System.out.println("Parsing Nation Info");
+			}
 			XmlPullParser xpp = null;
 			xpp = data.xpp;
 			String tagName = null;
@@ -166,6 +269,9 @@ public class NationStates {
 					}
 					break;
 				case XmlPullParser.START_TAG:
+					if (verbose) {
+						System.out.println("Parsing Nation Tag: " + tagName);
+					}
 					tagName = xpp.getName().toLowerCase();
 					if (tagName.equals(NationData.Shards.CATEGORY.getTag())) {
 						nation.category = xpp.nextText();
@@ -543,6 +649,9 @@ public class NationStates {
 		NSData data = null;
 		try {
 			data = getInfo(new StringBuilder().append("?region=").append(name.replace(' ', '_')).toString(), shards);
+			if (verbose) {
+				System.out.println("Parsing Region Info");
+			}
 			String tagName = null;
 			XmlPullParser xpp = data.xpp;
 			RegionData region = new RegionData();
@@ -555,6 +664,9 @@ public class NationStates {
 					break;
 				case XmlPullParser.START_TAG:
 					tagName = xpp.getName().toLowerCase();
+					if (verbose) {
+						System.out.println("Parsing Region Tag: " + tagName);
+					}
 					if (tagName.equals(RegionData.Shards.FLAG.getTag())) {
 						region.flagURL = xpp.nextText();
 					}
@@ -785,6 +897,10 @@ public class NationStates {
 		}
 		String str = API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
 				"&q=" + shardsStr;
+
+		if (verbose) {
+			System.out.println("Making HTTP request: " + str);
+		}
 		
 		HttpClient client = new DefaultHttpClient();
 		client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
