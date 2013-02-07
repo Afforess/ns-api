@@ -6,7 +6,7 @@ public class Embassy {
 	 */
 	public enum EmbassyStatus {
 		/** An established embassy */
-		ESTABLISHED(null),
+		ESTABLISHED("established"),
 		/** An embassy being created */
 		PENDING("pending"),
 		/** An embassy invitation from another region */
@@ -49,5 +49,10 @@ public class Embassy {
 	public Embassy(String region, EmbassyStatus status) {
 		this.region = region;
 		this.status = status;
+	}
+	
+	@Override
+	public String toString() {
+		return "\t\t" + region + " (" + status.description + ")";
 	}
 }

@@ -37,4 +37,9 @@ public class RMBMessage {
 		this.nation = nation;
 		this.message = message;
 	}
+	
+	@Override
+	public String toString() {
+		return "\t\t("+timestamp+") "+nation+": "+message;
+	}
 }

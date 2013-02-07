@@ -35,4 +35,9 @@ public abstract class Happening {
 		this.timestamp = timestamp;
 		this.text = text;
 	}
+	
+	@Override
+	public String toString() {
+		return "\t\t"+timestamp+": "+text;
+	}
 }

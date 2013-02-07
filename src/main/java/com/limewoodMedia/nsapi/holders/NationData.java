@@ -30,6 +30,8 @@ import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
 import com.limewoodMedia.nsapi.holders.RegionData.Shards.Arguments;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,11 +89,17 @@ public class NationData {
 		PUBLIC_SECTOR("publicsector"),
 		DEATHS("deaths"),
 		CAPITAL("capital"),
-		CUSTOM_CAPITAL("customreligion", "religion");
+		CUSTOM_CAPITAL("customreligion", "religion"),
+		REGIONAL_CENSUS("rcensus"),
+		WORLD_CENSUS("wcensus"),
+		CURRENT_CENSUS_SCORE("censusscore"),
+		CENSUS_SCORE("", "censusscore");
 
 		private String name;
 		private String tag;
 		private Map<IArguments, String> arguments;
+		/** Census id - only for the CENSUS_SCORE shard */
+		private List<Integer> censusIds;
 
 		private Shards(String name, String tag) {
 			this.name = name;
@@ -124,9 +132,55 @@ public class NationData {
 			arguments.put(name, value);
 			return this;
 		}
+		
+		/**
+		 * Adds an id of a census to query
+		 * To get the current census score, use CURRENT_CENSUS_SCORE
+		 * @param censusId the id of the census to add
+		 */
+		public Shards addIds(Integer...censusIds) {
+			if(this != CENSUS_SCORE) {
+				throw new IllegalArgumentException("Ids can only be added on the CENSUS_SCORE shard");
+			}
+			if(this.censusIds == null) {
+				this.censusIds = new ArrayList<Integer>();
+			}
+			this.censusIds.addAll(Arrays.asList(censusIds));
+			for(int id : censusIds) {
+				if(name.length() == 0) {
+					this.name += "censusscore-"+id;
+				} else {
+					this.name += "+censusscore-"+id;
+				}
+			}
+			return this;
+		}
+		
+		/**
+		 * @return the ids of the queried censuses
+		 */
+		public List<Integer> getIds() {
+			if(this != CENSUS_SCORE) {
+				throw new IllegalArgumentException("Ids only exist on the CENSUS_SCORE shard");
+			}
+			return censusIds;
+		}
+		
+		/**
+		 * Clears the list of census ids
+		 */
+		public void clearIds() {
+			if(this != CENSUS_SCORE) {
+				throw new IllegalArgumentException("Ids can only be cleared on the CENSUS_SCORE shard");
+			}
+			if(this.censusIds != null) {
+				this.censusIds.clear();
+			}
+		}
 
 		public static enum Attributes {
-			DEATHS_CAUSE_TYPE("type");
+			DEATHS_CAUSE_TYPE("type"),
+			CENSUS_SCORE_ID("id");
 
 			private String name;
 
@@ -208,6 +262,9 @@ public class NationData {
 	public int publicSector;
 	public Map<CauseOfDeath, Integer> deaths;
 	public String capital;
+	public int regionalCensus;
+	public int worldCensus;
+	public Map<Integer, Integer> censusScore;
 
 	public String getDescription() {
 		String size;
@@ -271,5 +328,62 @@ public class NationData {
 				"'s national animal is the " + this.animal + ", which " + this.animalTrait +
 				(this.religion != null ? ", its national religion is " + this.religion : "") +
 				" and its currency is the " + this.currency + ".";
+	}
+	
+	@Override
+	public String toString() {
+		String str = "Nation"
+				+"\n\tname:\t"+name
+				+"\n\tfullName:\t"+fullName
+				+"\n\tmotto:\t"+motto
+				+"\n\tflagURL:\t"+flagURL
+				+"\n\tregion:\t"+region
+				+"\n\tcategory:\t"+category
+				+"\n\tpopulation:\t"+population
+				+"\n\tfreedoms:\t"+freedoms
+				+"\n\tadmirable:\t"+admirable
+				+"\n\tnotable:\t"+notable
+				+"\n\tsensibilities:\t"+sensibilities
+				+"\n\tgovernmentDescription:\t"+governmentDescription
+				+"\n\ttaxRate:\t"+taxRate
+				+"\n\tindustryDescription:\t"+industryDescription
+				+"\n\tanimal:\t"+animal
+				+"\n\tanimalTrait:\t"+animalTrait
+				+"\n\tcrime:\t"+crime
+				+"\n\tcurrency:\t"+currency
+				+"\n\tleader:\t"+leader
+				+"\n\treligion:\t"+religion
+				+"\n\tlegislation:\t"+legislation
+				+"\n\thappenings:";
+		if(happenings != null) {
+			for(Happening h : happenings) {
+				str += "\n" + h;
+			}
+		}
+				str += "\n\ttype:\t"+type
+				+"\n\tworldAssemblyStatus:\t"+worldAssemblyStatus
+				+"\n\tendorsements:";
+		if(endorsements != null) {
+			for(String e : endorsements) {
+				str += "\n\t\t" + e;
+			}
+		}
+				str += "\n\tgeneralAssemblyVote:\t"+generalAssemblyVote
+				+"\n\tsecurityCouncilVote:\t"+securityCouncilVote
+				+"\n\tmajorIndustry:\t"+majorIndustry
+				+"\n\tgovernmentPriority:\t"+governmentPriority
+				+"\n\tgovernmentBudget:"+governmentBudget
+				+"\n\tfounded:\t"+founded
+				+"\n\tfirstLogin:\t"+firstLogin
+				+"\n\tlastActivity:\t"+lastActivity
+				+"\n\tlastLogin:\t"+lastLogin
+				+"\n\tinfluence:\t"+influence
+				+"\n\tpublicSector:\t"+publicSector+"%"
+				+"\n\tdeaths:\t"+deaths
+				+"\n\tcapital:\t"+capital
+				+"\n\tregionalCensus:\t"+regionalCensus
+				+"\n\tworldCensus:\t"+worldCensus
+				+"\n\tcensusScore:\t"+censusScore;
+		return str;
 	}
 }

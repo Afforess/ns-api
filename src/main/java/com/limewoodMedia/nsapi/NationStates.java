@@ -26,7 +26,6 @@ import com.limewoodMedia.nsapi.enums.CauseOfDeath;
 import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
 import com.limewoodMedia.nsapi.enums.WACouncil;
-import com.limewoodMedia.nsapi.enums.WAData;
 import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
 import com.limewoodMedia.nsapi.exceptions.RateLimitReachedException;
@@ -41,6 +40,7 @@ import com.limewoodMedia.nsapi.holders.NationHappening;
 import com.limewoodMedia.nsapi.holders.RMBMessage;
 import com.limewoodMedia.nsapi.holders.RegionData;
 import com.limewoodMedia.nsapi.holders.RegionHappening;
+import com.limewoodMedia.nsapi.holders.WAData;
 import com.limewoodMedia.nsapi.holders.WAHappening;
 import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
 import com.limewoodMedia.nsapi.holders.WAVotes;
@@ -197,11 +197,11 @@ public class NationStates {
 	}
 
 	/**
-    * Fetches information on the world
-    * @param arguments the shards to request
-    * @return a WorldData object with world info
-    * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
-    */
+	* Fetches information on the world
+	* @param arguments the shards to request
+	* @return a WorldData object with world info
+	* @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+	*/
 	public WorldData getWorldInfo(WorldData.Shards...shards) {
 		if (!makeCall()) {
 			throw new RateLimitReachedException();
@@ -277,14 +277,14 @@ public class NationStates {
 		}
 	}
 
-    /**
-     * Fetches information on the World Assembly
-     * @param council what council to query (not used for some shards)
-     * @param shards the shards to request
-     * @return a WAData object with World Assembly info
-     * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
-     */
-    public WAData getWAInfo(WACouncil council, WAData.Shards...shards) {
+	/**
+	 * Fetches information on the World Assembly
+	 * @param council what council to query (not used for some shards)
+	 * @param shards the shards to request
+	 * @return a WAData object with World Assembly info
+	 * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+	 */
+	public WAData getWAInfo(WACouncil council, WAData.Shards...shards) {
 		if (!makeCall()) {
 			throw new RateLimitReachedException();
 		}
@@ -318,6 +318,7 @@ public class NationStates {
 						wa.memberLog = parseWAMemberLog(xpp);
 					}
 					else if (tagName.equals(WAData.Shards.LAST_RESOLUTION.getTag())) {
+						// TODO FIXME This tag can contain invalid xml!
 						wa.lastResolution = xpp.nextText();
 					}
 					else {
@@ -403,13 +404,13 @@ public class NationStates {
 	}
 
 	/**
-    * Fetches information on a nation
-    * @param name the nation id
-    * @param arguments the shards to request
-    * @return a NationData object with nation info
-    * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
-    * @throws UnknownNationException if the nation could not be found
-    */
+	* Fetches information on a nation
+	* @param name the nation id
+	* @param arguments the shards to request
+	* @return a NationData object with nation info
+	* @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+	* @throws UnknownNationException if the nation could not be found
+	*/
 	public NationData getNationInfo(String name, NationData.Shards...shards) {
 		if (!makeCall()) {
 			throw new RateLimitReachedException();
@@ -557,6 +558,20 @@ public class NationStates {
 					}
 					else if (tagName.equals(NationData.Shards.CAPITAL.getTag())) {
 						nation.capital = xpp.nextText();
+					}
+					else if (tagName.equals(NationData.Shards.REGIONAL_CENSUS.getTag())) {
+						nation.regionalCensus = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(NationData.Shards.WORLD_CENSUS.getTag())) {
+						nation.worldCensus = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(NationData.Shards.CENSUS_SCORE.getTag())) {
+						if(nation.censusScore == null) {
+							nation.censusScore = new HashMap<Integer, Integer>();
+						}
+						int id = Integer.parseInt(xpp.getAttributeValue(null,
+								NationData.Shards.Attributes.CENSUS_SCORE_ID.getName()));
+						nation.censusScore.put(id, Integer.parseInt(xpp.nextText()));
 					}
 					else {
 						System.err.println("Unknown nation tag: " + tagName);
@@ -796,14 +811,14 @@ public class NationStates {
 		return deaths;
 	}
 
-    /**
-     * Fetches information on a region
-     * @param name the region id
-     * @param arguments the shards to request
-     * @return a RegionData object with region info
-     * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
-     * @throws UnknownRegionException if the region could not be found
-     */
+	/**
+	 * Fetches information on a region
+	 * @param name the region id
+	 * @param arguments the shards to request
+	 * @return a RegionData object with region info
+	 * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+	 * @throws UnknownRegionException if the region could not be found
+	 */
 	public RegionData getRegionInfo(String name, RegionData.Shards...shards)
 		throws XmlPullParserException, IOException, RateLimitReachedException, UnknownRegionException {
 		if (!makeCall()) {
@@ -966,10 +981,12 @@ public class NationStates {
 			case XmlPullParser.START_TAG:
 				tagName = xpp.getName().toLowerCase();
 				if (tagName.equals(RegionData.Shards.SubTags.WA_VOTES_FOR.getTag())) {
-					votes.forVotes = Integer.parseInt(xpp.nextText());
+					String str = xpp.nextText();
+					votes.forVotes = str.length() == 0 ? 0 : Integer.parseInt(str);
 				}
 				else if (tagName.equals(RegionData.Shards.SubTags.WA_VOTES_AGAINST.getTag())) {
-					votes.againstVotes = Integer.parseInt(xpp.nextText());
+					String str = xpp.nextText();
+					votes.againstVotes = str.length() == 0 ? 0 : Integer.parseInt(str);
 				}
 				else {
 					System.err.println("Unknown WA voting tag: " + tagName);

@@ -40,4 +40,19 @@ public class Budget {
 	public int publicTransport;
 	public int healthCare;
 	public int commerce;
+
+	@Override
+	public String toString() {
+		return "\n\t\tadministration:"+administration+"%"
+				+"\n\t\tcommerce:"+commerce+"%"
+				+"\n\t\tdefence:"+defence+"%"
+				+"\n\t\teducation:"+education+"%"
+				+"\n\t\tenvironment:"+environment+"%"
+				+"\n\t\thealthCare:"+healthCare+"%"
+				+"\n\t\tlawAndOrder:"+lawAndOrder+"%"
+				+"\n\t\tpublicTransport:"+publicTransport+"%"
+				+"\n\t\tsocialEquality:"+socialEquality+"%"
+				+"\n\t\tspirituality:"+spirituality+"%"
+				+"\n\t\twelfare:"+welfare+"%";
+	}
 }

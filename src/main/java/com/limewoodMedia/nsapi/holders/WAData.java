@@ -20,7 +20,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.limewoodMedia.nsapi.enums;
+package com.limewoodMedia.nsapi.holders;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,8 +28,6 @@ import java.util.Map;
 
 import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
-import com.limewoodMedia.nsapi.holders.WAHappening;
-import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
 
 /**
  * Data object for holding World Assembly data
@@ -122,4 +120,47 @@ public class WAData {
 	public List<WAHappening> happenings;
 	public List<WAMemberLogHappening> memberLog;
 	public String lastResolution;
+	
+	@Override
+	public String toString() {
+		String str = "World Assembly"
+				+"\n\tnumNations:\t"+numNations
+				+"\n\tnumDelegates:\t"+numDelegates
+				+"\n\tdelegates:";
+		if(delegates != null) {
+			int i=0;
+			for(String d : delegates) {
+				str += "\n\t\t" + d;
+				if(++i > 99) {
+					str += "\n\t\t...";
+					break;
+				}
+			}
+		}
+		str += "\n\tmembers:";
+		if(members != null) {
+			int i=0;
+			for(String m : members) {
+				str += "\n\t\t" + m;
+				if(++i > 99) {
+					str += "\n\t\t...";
+					break;
+				}
+			}
+		}
+		str += "\n\thappenings:";
+		if(happenings != null) {
+			for(Happening h : happenings) {
+				str += "\n" + h;
+			}
+		}
+		str += "\n\tmemberLog:";
+		if(memberLog != null) {
+			for(Happening h : memberLog) {
+				str += "\n" + h;
+			}
+		}
+		str += "\n\tlastResolution:\t"+lastResolution;
+		return str;
+	}
 }

@@ -105,21 +105,23 @@ public class WorldData {
 		 * NOTE: can only be used with the REGIONS_BY_TAG shard
 		 * @param tag the tag to add
 		 */
-		public void addTag(String tag) {
+		public Shards addTags(String...tags) {
 			if(this != REGIONS_BY_TAG) {
 				throw new IllegalArgumentException("Tags can only be added to REGIONS_BY_TAG");
 			}
 			if(arguments == null) {
 				arguments = new HashMap<IArguments, String>();
-				arguments.put(Arguments.TAGS, tag);
-			} else {
-				String value = arguments.get(Arguments.TAGS);
-				if(value != null && value.length() > 0) {
-					arguments.put(Arguments.TAGS, value + "," + tag);
+			}
+			String tagStr = arguments.get(Arguments.TAGS);
+			for(String tag : tags) {
+				if(tagStr == null) {
+					tagStr = tag;
 				} else {
-					arguments.put(Arguments.TAGS, tag);
+					tagStr += "," + tag;
 				}
 			}
+			arguments.put(Arguments.TAGS, tagStr);
+			return this;
 		}
 
 		/**
@@ -146,4 +148,30 @@ public class WorldData {
 	public String featuredRegion;
 	public String[] newNations;
 	public String[] regionsByTag;
+
+	@Override
+	public String toString() {
+		String str = "World"
+				+"\n\tnumNations:\t"+numNations
+				+"\n\tnumRegions:\t"+numRegions
+				+"\n\tcensus:\t"+census
+				+"\n\tcensusId:\t"+censusId
+				+"\n\tcensusSize:\t"+censusSize
+				+"\n\tcensusScale:\t"+censusScale
+				+"\n\tcensusMedian:\t"+censusMedian
+				+"\n\tfeaturedRegion:\t"+featuredRegion
+				+"\n\tnewNations:";
+		if(newNations != null) {
+			for(String n : newNations) {
+				str += "\n\t\t" + n;
+			}
+		}
+		str += "\n\tregionsByTag:";
+		if(regionsByTag != null) {
+			for(String r : regionsByTag) {
+				str += "\n\t\t" + r;
+			}
+		}
+		return str;
+	}
 }

@@ -142,4 +142,50 @@ public class RegionData {
 	public String power;
 	public List<Embassy> embassies;
 	public List<String> tags;
+	
+	@Override
+	public String toString() {
+		String str = "Region"
+				+"\n\tname:\t"+name
+				+"\n\tflagURL:\t"+flagURL
+				+"\n\tdelegate:\t"+delegate
+				+"\n\tfounder:\t"+founder
+				+"\n\tfactbook:\t"+factbook
+				+"\n\thappenings:";
+		if(happenings != null) {
+			for(Happening h : happenings) {
+				str += "\n" + h;
+			}
+		}
+		str += "\n\tmessages:";
+		if(messages != null) {
+			for(RMBMessage msg : messages) {
+				str += "\n" + msg;
+			}
+		}
+		str += "\n\tnumNations:\t"+numNations
+				+"\n\tnations:";
+		if(nations != null) {
+			for(String n : nations) {
+				str += "\n\t\t" + n;
+			}
+		}
+		str += "\n\tdelegateVotes:\t"+delegateVotes
+				+"\n\tgeneralAssemblyVotes:\t"+generalAssemblyVotes
+				+"\n\tsecurityCouncilVotes:\t"+securityCouncilVotes
+				+"\n\tpower:\t"+power
+				+"\n\tembassies:";
+		if(embassies != null) {
+			for(Embassy e : embassies) {
+				str += "\n" + e;
+			}
+		}
+		str += "\n\ttags:";
+		if(tags != null) {
+			for(String tag : tags) {
+				str += "\n\t\t" + tag;
+			}
+		}
+		return str;
+	}
 }

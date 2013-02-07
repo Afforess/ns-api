@@ -34,4 +34,11 @@ public class NationFreedoms {
 	public int economyValue;
 	public String politicalFreedoms;
 	public int politicalFreedomsValue;
+	
+	@Override
+	public String toString() {
+		return "\n\t\tcivil rights: "+civilRights+" ("+civilRightsValue+")"
+				+"\n\t\teconomy: "+economy+" ("+economyValue+")"
+				+"\n\t\tpolitical freedoms: "+politicalFreedoms+" ("+politicalFreedomsValue+")";
+	}
 }

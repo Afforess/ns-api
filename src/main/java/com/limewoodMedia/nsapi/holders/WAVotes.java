@@ -37,4 +37,10 @@ public class WAVotes {
 		this.forVotes = forVotes;
 		this.againstVotes = againstVotes;
 	}
+	
+	@Override
+	public String toString() {
+		return "\n\t\tFOR: " + forVotes + "\n"
+				+"\t\tAGAINST: " + againstVotes;
+	}
 }
