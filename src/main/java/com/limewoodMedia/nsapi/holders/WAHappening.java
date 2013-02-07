@@ -20,34 +20,15 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.limewoodMedia.nsapi.enums;
+package com.limewoodMedia.nsapi.holders;
 
 /**
- * Enum representing World Assembly status
+ * Data object for nation happenings
  * @author Joakim Lindskog
  *
  */
-public enum WAStatus {
-	NON_MEMBER("Non-member"),
-	WA_MEMBER("WA Member"),
-	WA_DELEGATE("WA Delegate");
-	
-	public static WAStatus parse(String description) {
-		for(WAStatus status : values()) {
-			if(status.description.equalsIgnoreCase(description)) {
-				return status;
-			}
-		}
-		return null;
-	}
-	
-	private String description;
-	
-	private WAStatus(String description) {
-		this.description = description;
-	}
-	
-	public String getDescription() {
-		return description;
+public class WAHappening extends Happening {
+	public WAHappening(long timestamp, String text) {
+		super(timestamp, text);
 	}
 }

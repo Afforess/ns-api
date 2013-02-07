@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2013 Afforess
  * Copyright (c) 2013 Joakim Lindskog
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -21,34 +20,34 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.limewoodMedia.nsapi.holders;
+package com.limewoodMedia.nsapi.enums;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
+import com.limewoodMedia.nsapi.holders.WAHappening;
+import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
 
 /**
- * Data object for holding world data
- * @author Afforess
+ * Data object for holding World Assembly data
  * @author joakim
  */
-public class WorldData {
+public class WAData {
 	/**
-	 * Shards for world data
+	 * Shards for World Assembly data
 	 */
 	public static enum Shards implements IShards {
 		NUM_NATIONS("numnations"),
-		NUM_REGIONS("numregions"),
-		CENSUS("census"),
-		CENSUS_ID("censusid"),
-		CENSUS_SIZE("censussize"),
-		CENSUS_SCALE("censusscale"),
-		CENSUS_MEDIAN("censusmedian"),
-		FEATURED_REGION("featuredregion"),
-		NEW_NATIONS("newnations"),
-		REGIONS_BY_TAG("regionsbytag", "regions");
+		NUM_DELEGATES("numdelegates"),
+		DELEGATES("delegates"),
+		MEMBERS("members"),
+		HAPPENINGS("happenings"),
+		MEMBER_LOG("memberlog"),
+		LAST_RESOLUTION("lastresolution");
+		// Missing resolution, votetrack, dellog, delvotes
 		
 		private String name;
 		private String tag;
@@ -87,7 +86,7 @@ public class WorldData {
 		}
 		
 		public static enum Arguments implements IArguments {
-			TAGS("tags");
+			;
 			
 			private String name;
 
@@ -99,51 +98,28 @@ public class WorldData {
 				return this.name;
 			}
 		}
+		
+		public static enum SubTags {
+			HAPPENINGS_EVENT("event"),
+			MEMBER_LOG_EVENT("event");
 
-		/**
-		 * Adds a tag to the shard
-		 * NOTE: can only be used with the REGIONS_BY_TAG shard
-		 * @param tag the tag to add
-		 */
-		public void addTag(String tag) {
-			if(this != REGIONS_BY_TAG) {
-				throw new IllegalArgumentException("Tags can only be added to REGIONS_BY_TAG");
-			}
-			if(arguments == null) {
-				arguments = new HashMap<IArguments, String>();
-				arguments.put(Arguments.TAGS, tag);
-			} else {
-				String value = arguments.get(Arguments.TAGS);
-				if(value != null && value.length() > 0) {
-					arguments.put(Arguments.TAGS, value + "," + tag);
-				} else {
-					arguments.put(Arguments.TAGS, tag);
-				}
-			}
-		}
+			private String tag;
 
-		/**
-		 * Clears all tags from the REGIONS_BY_TAG shard
-		 * NOTE: can only be used with the REGIONS_BY_TAG shard
-		 */
-		public void clearTags() {
-			if(this != REGIONS_BY_TAG) {
-				throw new IllegalArgumentException("Tags can only be added to REGIONS_BY_TAG");
+			private SubTags(String tag) {
+				this.tag = tag;
 			}
-			if(arguments != null) {
-				arguments.remove(Arguments.TAGS);
+
+			public String getTag() {
+				return this.tag;
 			}
 		}
 	}
 
 	public int numNations;
-	public int numRegions;
-	public String census;
-	public int censusId;
-	public int censusSize;
-	public String censusScale;
-	public int censusMedian;
-	public String featuredRegion;
-	public String[] newNations;
-	public String[] regionsByTag;
+	public int numDelegates;
+	public String[] delegates;
+	public String[] members;
+	public List<WAHappening> happenings;
+	public List<WAMemberLogHappening> memberLog;
+	public String lastResolution;
 }

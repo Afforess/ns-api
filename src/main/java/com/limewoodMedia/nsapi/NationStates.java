@@ -25,6 +25,8 @@ package com.limewoodMedia.nsapi;
 import com.limewoodMedia.nsapi.enums.CauseOfDeath;
 import com.limewoodMedia.nsapi.enums.IArguments;
 import com.limewoodMedia.nsapi.enums.IShards;
+import com.limewoodMedia.nsapi.enums.WACouncil;
+import com.limewoodMedia.nsapi.enums.WAData;
 import com.limewoodMedia.nsapi.enums.WAStatus;
 import com.limewoodMedia.nsapi.enums.WAVote;
 import com.limewoodMedia.nsapi.exceptions.RateLimitReachedException;
@@ -39,6 +41,8 @@ import com.limewoodMedia.nsapi.holders.NationHappening;
 import com.limewoodMedia.nsapi.holders.RMBMessage;
 import com.limewoodMedia.nsapi.holders.RegionData;
 import com.limewoodMedia.nsapi.holders.RegionHappening;
+import com.limewoodMedia.nsapi.holders.WAHappening;
+import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
 import com.limewoodMedia.nsapi.holders.WAVotes;
 import com.limewoodMedia.nsapi.holders.WorldData;
 
@@ -72,16 +76,50 @@ import org.xmlpull.v1.XmlPullParserException;
 public class NationStates {
 	public static final String API = "http://www.nationstates.net/cgi-bin/api.cgi";
 	public static final String API_USER_AGENT = "Java NSAPI library by Laevendell (code.google.com/p/ns-api/); ";
-	public static final int RATE_LIMIT = 49; // One lower to be on the safe side
+	public static final int DEFAULT_RATE_LIMIT = 49; // One lower to be on the safe side
 
 	public NationStates() {
 		
 	}
 
 	private final Queue<Date> calls = new ConcurrentLinkedQueue<Date>();
+	private int rateLimit = DEFAULT_RATE_LIMIT;
+	private boolean useRateLimit = true;
 	private String userAgent = null;
 	private int version = -1;
 	private boolean verbose = false;
+
+	/**
+	 * Sets the rate limit - default is 49 (per 30 seconds)
+	 * CAUTION: make sure your application doesn't exceed the rate limit
+	 * @param rateLimit max number of calls per 30 seconds
+	 */
+	public void setRateLimit(int rateLimit) {
+		this.rateLimit = rateLimit;
+	}
+
+	/**
+	 * @return the current rate limit (max number of calls per 30 seconds)
+	 */
+	public int getRateLimit() {
+		return rateLimit;
+	}
+
+	/**
+	 * Enables/disables the rate limit (default is enabled)
+	 * CAUTION: only disable the rate limit if you handle it properly elsewhere
+	 * @param enabled true to enable the rate limit, false to disable it
+	 */
+	public void setRateLimitEnabled(boolean enabled) {
+		useRateLimit = enabled;
+	}
+
+	/**
+	 * @return whether the rate limit is enabled
+	 */
+	public boolean isRateLimitEnabled() {
+		return useRateLimit;
+	}
 
 	/**
 	 * Verbose mode does extensive debug logging
@@ -140,7 +178,7 @@ public class NationStates {
 			throw new IllegalArgumentException("No User-Agent set! Use NSAPI.getInstance().setUserAgent(String).");
 		}
 		synchronized (this.calls) {
-			if(this.calls.size() < RATE_LIMIT) {
+			if(this.calls.size() < rateLimit) {
 				this.calls.add(new Date());
 				return true;
 			}
@@ -150,7 +188,7 @@ public class NationStates {
 			for(Date d = this.calls.peek(); !this.calls.isEmpty() && d.before(now); d = this.calls.peek()) {
 				this.calls.poll();
 			}
-			if(this.calls.size() < RATE_LIMIT) {
+			if(this.calls.size() < rateLimit) {
 				this.calls.add(new Date());
 				return true;
 			}
@@ -237,6 +275,131 @@ public class NationStates {
 				}
 			}
 		}
+	}
+
+    /**
+     * Fetches information on the World Assembly
+     * @param council what council to query (not used for some shards)
+     * @param shards the shards to request
+     * @return a WAData object with World Assembly info
+     * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+     */
+    public WAData getWAInfo(WACouncil council, WAData.Shards...shards) {
+		if (!makeCall()) {
+			throw new RateLimitReachedException();
+		}
+		NSData data = null;
+		try {
+			data = getInfo("?wa="+council.getId(), shards);
+			XmlPullParser xpp = null;
+			xpp = data.xpp;
+			String tagName = null;
+			WAData wa = new WAData();
+			while (xpp.next() != XmlPullParser.END_DOCUMENT) {
+				switch (xpp.getEventType()) {
+				case XmlPullParser.START_TAG:
+					tagName = xpp.getName().toLowerCase();
+					if (tagName.equals(WAData.Shards.NUM_NATIONS.getTag())) {
+						wa.numNations = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WAData.Shards.NUM_DELEGATES.getTag())) {
+						wa.numDelegates = Integer.parseInt(xpp.nextText());
+					}
+					else if (tagName.equals(WAData.Shards.DELEGATES.getTag())) {
+						wa.delegates = xpp.nextText().split(",");
+					}
+					else if (tagName.equals(WAData.Shards.MEMBERS.getTag())) {
+						wa.members = xpp.nextText().split(",");
+					}
+					else if (tagName.equals(WAData.Shards.HAPPENINGS.getTag())) {
+						wa.happenings = parseWAHappenings(xpp);
+					}
+					else if (tagName.equals(WAData.Shards.MEMBER_LOG.getTag())) {
+						wa.memberLog = parseWAMemberLog(xpp);
+					}
+					else if (tagName.equals(WAData.Shards.LAST_RESOLUTION.getTag())) {
+						wa.lastResolution = xpp.nextText();
+					}
+					else {
+						System.err.println("Unknown WA tag: " + tagName);
+					}
+					break;
+				}
+			}
+			return wa;
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException("Failed to parse XML", e);
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing XML", e);
+		}
+		finally {
+			if (data != null) {
+				try {
+					data.stream.close();
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	private List<WAHappening> parseWAHappenings(XmlPullParser xpp)
+		throws NumberFormatException, XmlPullParserException, IOException {
+		String tagName = null;
+		long ts = -1L;
+		String text = null;
+		ArrayList<WAHappening> happenings = new ArrayList<WAHappening>();
+		loop: while (xpp.next() != XmlPullParser.END_DOCUMENT)
+			switch (xpp.getEventType()) {
+			case XmlPullParser.START_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals(WAData.Shards.SubTags.HAPPENINGS_EVENT.getTag())) {
+					// Get timestamp
+					xpp.nextTag();
+					ts = Long.parseLong(xpp.nextText());
+					// Get text
+					xpp.nextTag();
+					text = xpp.nextText();
+					happenings.add(new WAHappening(ts, text));
+				}
+				break;
+			case XmlPullParser.END_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals(WAData.Shards.HAPPENINGS.getTag())) {
+					break loop;
+				}
+			}
+		return happenings;
+	}
+
+	private List<WAMemberLogHappening> parseWAMemberLog(XmlPullParser xpp)
+		throws NumberFormatException, XmlPullParserException, IOException {
+		String tagName = null;
+		long ts = -1L;
+		String text = null;
+		ArrayList<WAMemberLogHappening> happenings = new ArrayList<WAMemberLogHappening>();
+		loop: while (xpp.next() != XmlPullParser.END_DOCUMENT)
+			switch (xpp.getEventType()) {
+			case XmlPullParser.START_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals(WAData.Shards.SubTags.MEMBER_LOG_EVENT.getTag())) {
+					// Get timestamp
+					xpp.nextTag();
+					ts = Long.parseLong(xpp.nextText());
+					// Get text
+					xpp.nextTag();
+					text = xpp.nextText();
+					happenings.add(new WAMemberLogHappening(ts, text));
+				}
+				break;
+			case XmlPullParser.END_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals(WAData.Shards.MEMBER_LOG.getTag())) {
+					break loop;
+				}
+			}
+		return happenings;
 	}
 
 	/**
