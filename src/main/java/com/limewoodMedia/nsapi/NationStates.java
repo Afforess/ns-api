@@ -88,6 +88,7 @@ public class NationStates {
 	private String userAgent = null;
 	private int version = -1;
 	private boolean verbose = false;
+	private boolean relaxed = false;
 
 	/**
 	 * Sets the rate limit - default is 49 (per 30 seconds)
@@ -169,6 +170,24 @@ public class NationStates {
 	}
 
 	/**
+	 * In relaxed mode the XML parsing attempts to correct any invalid xml characters it encounters
+	 * 
+	 * @return relaxed mode
+	 */
+	public boolean isRelaxed() {
+		return relaxed;
+	}
+
+	/**
+	 * Sets whether XML parsing should be strict (relaxed == false) or relaxed.
+	 * 
+	 * @param relax
+	 */
+	public void setRelaxed(boolean relax) {
+		this.relaxed = relax;
+	}
+
+	/**
 	 * Makes sure you do not exceed the NS API rate limit
 	 * @return true if it's OK to make a call to the NS API
 	 * @throws IllegalArgumentException if no User-Agent was set
@@ -214,6 +233,7 @@ public class NationStates {
 			}
 			XmlPullParser xpp = null;
 			xpp = data.xpp;
+			xpp.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", relaxed);
 			String tagName = null;
 			WorldData world = new WorldData();
 			while (xpp.next() != XmlPullParser.END_DOCUMENT) {
@@ -253,7 +273,7 @@ public class NationStates {
 					else if (tagName.equals(WorldData.Shards.REGIONS_BY_TAG.getTag())) {
 						world.regionsByTag = xpp.nextText().split(",");
 					}
-					else {
+					else if (verbose) {
 						System.err.println("Unknown world tag: " + tagName);
 					}
 					break;
@@ -293,6 +313,7 @@ public class NationStates {
 			data = getInfo("?wa="+council.getId(), shards);
 			XmlPullParser xpp = null;
 			xpp = data.xpp;
+			xpp.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", relaxed);
 			String tagName = null;
 			WAData wa = new WAData();
 			while (xpp.next() != XmlPullParser.END_DOCUMENT) {
@@ -321,7 +342,7 @@ public class NationStates {
 						// TODO FIXME This tag can contain invalid xml!
 						wa.lastResolution = xpp.nextText();
 					}
-					else {
+					else if (verbose) {
 						System.err.println("Unknown WA tag: " + tagName);
 					}
 					break;
@@ -423,6 +444,7 @@ public class NationStates {
 			}
 			XmlPullParser xpp = null;
 			xpp = data.xpp;
+			xpp.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", relaxed);
 			String tagName = null;
 			NationData nation = new NationData();
 			while (xpp.next() != XmlPullParser.END_DOCUMENT) {
@@ -573,7 +595,7 @@ public class NationStates {
 								NationData.Shards.Attributes.CENSUS_SCORE_ID.getName()));
 						nation.censusScore.put(id, Integer.parseInt(xpp.nextText()));
 					}
-					else {
+					else if (verbose) {
 						System.err.println("Unknown nation tag: " + tagName);
 					}
 					break;
@@ -616,7 +638,7 @@ public class NationStates {
 				else if (tagName.equals(NationData.Shards.SubTags.FREEDOMS_POLITICAL_FREEDOM.getTag())) {
 					freedoms.politicalFreedoms = xpp.nextText();
 				}
-				else {
+				else if (verbose) {
 					System.err.println("Unknown freedom tag: " + tagName);
 				}
 				break;
@@ -648,7 +670,7 @@ public class NationStates {
 				else if (tagName.equals(NationData.Shards.SubTags.FREEDOMS_POLITICAL_FREEDOM.getTag())) {
 					freedoms.politicalFreedomsValue = Integer.parseInt(xpp.nextText());
 				}
-				else {
+				else if (verbose) {
 					System.err.println("Unknown freedom score tag: " + tagName);
 				}
 				break;
@@ -770,7 +792,7 @@ public class NationStates {
 				else if (tagName.equals(NationData.Shards.SubTags.BUDGET_COMMERCE.getTag())) {
 					budget.commerce = value;
 				}
-				else {
+				else if (verbose) {
 					System.err.println("Unknown budget tag: " + tagName);
 				}
 				break;
@@ -819,8 +841,7 @@ public class NationStates {
 	 * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
 	 * @throws UnknownRegionException if the region could not be found
 	 */
-	public RegionData getRegionInfo(String name, RegionData.Shards...shards)
-		throws XmlPullParserException, IOException, RateLimitReachedException, UnknownRegionException {
+	public RegionData getRegionInfo(String name, RegionData.Shards...shards){
 		if (!makeCall()) {
 			throw new RateLimitReachedException();
 		}
@@ -832,6 +853,7 @@ public class NationStates {
 			}
 			String tagName = null;
 			XmlPullParser xpp = data.xpp;
+			xpp.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", relaxed);
 			RegionData region = new RegionData();
 			while (xpp.next() != XmlPullParser.END_DOCUMENT)
 				switch (xpp.getEventType()) {
@@ -890,12 +912,16 @@ public class NationStates {
 					else if (tagName.equals(RegionData.Shards.TAGS.getTag())) {
 						region.tags = parseTags(xpp);
 					}
-					else {
+					else if (verbose) {
 						System.err.println("Unknown region tag: " + tagName);
 					}
 					break;
 				}
 			return region;
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException("Failed to parse XML", e);
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing XML", e);
 		}
 		finally {
 			if(data != null) {
