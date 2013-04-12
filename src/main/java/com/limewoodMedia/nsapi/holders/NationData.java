@@ -176,6 +176,7 @@ public class NationData {
 			if(this.censusIds != null) {
 				this.censusIds.clear();
 			}
+			this.name = "";
 		}
 
 		public static enum Attributes {
