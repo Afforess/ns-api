@@ -589,11 +589,11 @@ public class NationStates {
 					}
 					else if (tagName.equals(NationData.Shards.CENSUS_SCORE.getTag())) {
 						if(nation.censusScore == null) {
-							nation.censusScore = new HashMap<Integer, Integer>();
+							nation.censusScore = new HashMap<Integer, Float>();
 						}
 						int id = Integer.parseInt(xpp.getAttributeValue(null,
 								NationData.Shards.Attributes.CENSUS_SCORE_ID.getName()));
-						nation.censusScore.put(id, Integer.parseInt(xpp.nextText()));
+						nation.censusScore.put(id, Float.parseFloat(xpp.nextText()));
 					}
 					else if (verbose) {
 						System.err.println("Unknown nation tag: " + tagName);

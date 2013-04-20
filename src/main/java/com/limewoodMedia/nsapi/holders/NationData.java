@@ -265,7 +265,7 @@ public class NationData {
 	public String capital;
 	public int regionalCensus;
 	public int worldCensus;
-	public Map<Integer, Integer> censusScore;
+	public Map<Integer, Float> censusScore;
 
 	public String getDescription() {
 		String size;
