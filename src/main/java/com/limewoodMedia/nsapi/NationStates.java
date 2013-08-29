@@ -835,19 +835,14 @@ public class NationStates {
 
 	/**
 	 * Fetches information on a region
-	 * @param name the region id
-	 * @param arguments the shards to request
+	 * @param NSData to use to retrieve region info
+	 * @param name of the region id
 	 * @return a RegionData object with region info
 	 * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
 	 * @throws UnknownRegionException if the region could not be found
 	 */
-	public RegionData getRegionInfo(String name, RegionData.Shards...shards){
-		if (!makeCall()) {
-			throw new RateLimitReachedException();
-		}
-		NSData data = null;
+	public RegionData getRegionInfo(NSData data, String name) {
 		try {
-			data = getInfo(new StringBuilder().append("?region=").append(name.replace(' ', '_')).toString(), shards);
 			if (verbose) {
 				System.out.println("Parsing Region Info");
 			}
@@ -931,6 +926,27 @@ public class NationStates {
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	/**
+	 * Fetches information on a region
+	 * @param name the region id
+	 * @param arguments the shards to request
+	 * @return a RegionData object with region info
+	 * @throws RateLimitReachedException if the rate limit was reached (but not exceeded)
+	 * @throws UnknownRegionException if the region could not be found
+	 */
+	public RegionData getRegionInfo(String name, RegionData.Shards...shards) {
+		if (!makeCall()) {
+			throw new RateLimitReachedException();
+		}
+		try {
+			return getRegionInfo(getInfo(new StringBuilder().append("?region=").append(name.replace(' ', '_')).toString(), shards), name);
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException("Failed to parse XML", e);
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing XML", e);
 		}
 	}
 
@@ -1084,9 +1100,7 @@ public class NationStates {
 	 * @throws XmlPullParserException if there was a problem with parsing the xml
 	 * @throws IOException if there was a network problem
 	 */
-	private synchronized NSData getInfo(String urlStart, IShards...shards)
-			throws XmlPullParserException, IOException {
-		KXmlParser xpp = new KXmlParser();
+	private synchronized NSData getInfo(String urlStart, IShards...shards) throws XmlPullParserException, IOException {
 		String shardsStr = null;
 		for (IShards s : shards) {
 			if(shardsStr == null) {
@@ -1113,8 +1127,24 @@ public class NationStates {
 		client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
 		HttpGet get = new HttpGet(str);
 		HttpResponse response = client.execute(get);
+		if (verbose) {
+			System.out.println("Status code for request: " + response.getStatusLine().getStatusCode());
+		}
+		if (response.getStatusLine().getStatusCode() == 429)  {
+			throw new RateLimitReachedException();
+		}
 		InputStream stream = response.getEntity().getContent();
-		
+		return getInfo(stream);
+	}
+
+	/**
+	 * Creates data from the inputstream
+	 * @param inputstream to create data with
+	 * @throws XmlPullParserException if there was a problem with parsing the xml
+	 * @throws IOException if there was a network problem
+	 */
+	public synchronized NSData getInfo(InputStream stream) throws XmlPullParserException, IOException {
+		KXmlParser xpp = new KXmlParser();
 		xpp.setInput(stream, null);
 		return new NSData(xpp, stream);
 	}
