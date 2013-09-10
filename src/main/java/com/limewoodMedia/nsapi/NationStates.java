@@ -188,11 +188,12 @@ public class NationStates {
 	}
 
 	/**
-	 * Makes sure you do not exceed the NS API rate limit
+	 * Makes sure you do not exceed the NS API rate limit - use for manual API requests.
+	 * 
 	 * @return true if it's OK to make a call to the NS API
 	 * @throws IllegalArgumentException if no User-Agent was set
 	 */
-	private boolean makeCall() throws IllegalArgumentException {
+	public boolean makeCall() throws IllegalArgumentException {
 		if(this.userAgent == null) {
 			throw new IllegalArgumentException("No User-Agent set! Use NSAPI.getInstance().setUserAgent(String).");
 		}
