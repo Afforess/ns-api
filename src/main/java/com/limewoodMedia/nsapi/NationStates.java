@@ -89,20 +89,21 @@ public class NationStates {
 	private int version = -1;
 	private boolean verbose = false;
 	private boolean relaxed = false;
+	private long hardRateLimit = 0;
 
 	/**
 	 * Sets the rate limit - default is 49 (per 30 seconds)
 	 * CAUTION: make sure your application doesn't exceed the rate limit
 	 * @param rateLimit max number of calls per 30 seconds
 	 */
-	public void setRateLimit(int rateLimit) {
+	public synchronized void setRateLimit(int rateLimit) {
 		this.rateLimit = rateLimit;
 	}
 
 	/**
 	 * @return the current rate limit (max number of calls per 30 seconds)
 	 */
-	public int getRateLimit() {
+	public synchronized int getRateLimit() {
 		return rateLimit;
 	}
 
@@ -111,14 +112,14 @@ public class NationStates {
 	 * CAUTION: only disable the rate limit if you handle it properly elsewhere
 	 * @param enabled true to enable the rate limit, false to disable it
 	 */
-	public void setRateLimitEnabled(boolean enabled) {
+	public synchronized void setRateLimitEnabled(boolean enabled) {
 		useRateLimit = enabled;
 	}
 
 	/**
 	 * @return whether the rate limit is enabled
 	 */
-	public boolean isRateLimitEnabled() {
+	public synchronized boolean isRateLimitEnabled() {
 		return useRateLimit;
 	}
 
@@ -126,7 +127,7 @@ public class NationStates {
 	 * Verbose mode does extensive debug logging
 	 * @return verbose
 	 */
-	public boolean isVerbose() {
+	public synchronized boolean isVerbose() {
 		return verbose;
 	}
 
@@ -134,7 +135,7 @@ public class NationStates {
 	 * Sets the verbose mode
 	 * @param verbose
 	 */
-	public void setVerbose(boolean verbose) {
+	public synchronized void setVerbose(boolean verbose) {
 		this.verbose = verbose;
 	}
 
@@ -143,14 +144,14 @@ public class NationStates {
 	 * Note: this needs to be set to be able to access the API
 	 * @param userAgent the User-Agent string to use
 	 */
-	public void setUserAgent(String userAgent) {
+	public synchronized void setUserAgent(String userAgent) {
 		this.userAgent = API_USER_AGENT + userAgent;
 	}
 
 	/**
 	 * @return the User-Agent
 	 */
-	public String getUserAgent() {
+	public synchronized String getUserAgent() {
 		return userAgent;
 	}
 
@@ -158,14 +159,14 @@ public class NationStates {
 	 * Sets version of the NationStates API to use
 	 * @param version the version of the NS API to use
 	 */
-	public void setVersion(int version) {
+	public synchronized void setVersion(int version) {
 		this.version = version;
 	}
 	
 	/**
 	 * @return the currently used version
 	 */
-	public int getVersion() {
+	public synchronized int getVersion() {
 		return version;
 	}
 
@@ -174,7 +175,7 @@ public class NationStates {
 	 * 
 	 * @return relaxed mode
 	 */
-	public boolean isRelaxed() {
+	public synchronized boolean isRelaxed() {
 		return relaxed;
 	}
 
@@ -183,37 +184,76 @@ public class NationStates {
 	 * 
 	 * @param relax
 	 */
-	public void setRelaxed(boolean relax) {
+	public synchronized void setRelaxed(boolean relax) {
 		this.relaxed = relax;
 	}
 
 	/**
-	 * Makes sure you do not exceed the NS API rate limit - use for manual API requests.
+	 * Makes sure you do not exceed the NS API rate limit
 	 * 
 	 * @return true if it's OK to make a call to the NS API
 	 * @throws IllegalArgumentException if no User-Agent was set
 	 */
-	public boolean makeCall() throws IllegalArgumentException {
-		if(this.userAgent == null) {
+	private synchronized boolean makeCall() throws IllegalArgumentException {
+		if (this.userAgent == null) {
 			throw new IllegalArgumentException("No User-Agent set! Use NSAPI.getInstance().setUserAgent(String).");
 		}
-		synchronized (this.calls) {
-			if(this.calls.size() < rateLimit) {
-				this.calls.add(new Date());
-				return true;
-			}
-			Calendar thirty = Calendar.getInstance();
-			thirty.add(Calendar.SECOND, -30);
-			Date now = thirty.getTime();
-			for(Date d = this.calls.peek(); !this.calls.isEmpty() && d.before(now); d = this.calls.peek()) {
-				this.calls.poll();
-			}
-			if(this.calls.size() < rateLimit) {
-				this.calls.add(new Date());
-				return true;
-			}
+		if (hardRateLimit > System.currentTimeMillis()) {
 			return false;
 		}
+		if (this.calls.size() < rateLimit) {
+			this.calls.add(new Date());
+			return true;
+		}
+		Calendar thirty = Calendar.getInstance();
+		thirty.add(Calendar.SECOND, -30);
+		Date now = thirty.getTime();
+		for (Date d = this.calls.peek(); !this.calls.isEmpty() && d.before(now); d = this.calls.peek()) {
+			this.calls.poll();
+		}
+		if (this.calls.size() < rateLimit) {
+			this.calls.add(new Date());
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Verifies the nation checksum with nationstates authentication
+	 * 
+	 * @param nation name to verify
+	 * @param checksum of the nation
+	 * @return true if verified
+	 */
+	public boolean verifyNation(String nation, String checksum) {
+		return verifyNation(nation, checksum, null);
+	}
+
+	/**
+	 * Verifies the nation checksum with nationstates authentication
+	 * 
+	 * @param nation name to verify
+	 * @param checksum of the nation
+	 * @param site-specific token (optional, null if none)
+	 * @return true if verified
+	 */
+	public boolean verifyNation(String nation, String checksum, String token) {
+		try {
+			InputStream stream = doRequest(API + "?a=verify&nation=" + nation.toLowerCase().replaceAll(" ", "_") + "&checksum=" + checksum + (token != null ? "&token=" + token : ""));
+			return "1".equals(convertStreamToString(stream).trim());
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing authentication result", e);
+		}
+	}
+
+	private static String convertStreamToString(java.io.InputStream is) {
+	    java.util.Scanner s = new java.util.Scanner(is);
+	    s.useDelimiter("\\A");
+	    try {
+	    	return s.hasNext() ? s.next() : "";
+	    } finally {
+	    	s.close();
+	    }
 	}
 
 	/**
@@ -1101,7 +1141,7 @@ public class NationStates {
 	 * @throws XmlPullParserException if there was a problem with parsing the xml
 	 * @throws IOException if there was a network problem
 	 */
-	private synchronized NSData getInfo(String urlStart, IShards...shards) throws XmlPullParserException, IOException {
+	private NSData getInfo(String urlStart, IShards...shards) throws XmlPullParserException, IOException {
 		String shardsStr = null;
 		for (IShards s : shards) {
 			if(shardsStr == null) {
@@ -1119,23 +1159,27 @@ public class NationStates {
 		String str = API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
 				"&q=" + shardsStr;
 
+		return getInfo(doRequest(str));
+	}
+
+	private synchronized InputStream doRequest(String url) throws IOException {
 		if (verbose) {
-			System.out.println("Making HTTP request: " + str);
+			System.out.println("Making HTTP request: " + url);
 		}
-		
+
 		HttpClient client = new DefaultHttpClient();
 		client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
 		client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
-		HttpGet get = new HttpGet(str);
+		HttpGet get = new HttpGet(url);
 		HttpResponse response = client.execute(get);
 		if (verbose) {
 			System.out.println("Status code for request: " + response.getStatusLine().getStatusCode());
 		}
 		if (response.getStatusLine().getStatusCode() == 429)  {
+			hardRateLimit = System.currentTimeMillis() + 900000L; //15 min
 			throw new RateLimitReachedException();
 		}
-		InputStream stream = response.getEntity().getContent();
-		return getInfo(stream);
+		return response.getEntity().getContent();
 	}
 
 	/**
@@ -1144,7 +1188,7 @@ public class NationStates {
 	 * @throws XmlPullParserException if there was a problem with parsing the xml
 	 * @throws IOException if there was a network problem
 	 */
-	public synchronized NSData getInfo(InputStream stream) throws XmlPullParserException, IOException {
+	public NSData getInfo(InputStream stream) throws XmlPullParserException, IOException {
 		KXmlParser xpp = new KXmlParser();
 		xpp.setInput(stream, null);
 		return new NSData(xpp, stream);
