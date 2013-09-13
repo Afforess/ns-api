@@ -89,7 +89,7 @@ public class NationData {
 		PUBLIC_SECTOR("publicsector"),
 		DEATHS("deaths"),
 		CAPITAL("capital"),
-		CUSTOM_CAPITAL("customreligion", "religion"),
+		CUSTOM_CAPITAL("customcapital", "capital"),
 		REGIONAL_CENSUS("rcensus"),
 		WORLD_CENSUS("wcensus"),
 		CURRENT_CENSUS_SCORE("censusscore"),
@@ -318,8 +318,22 @@ public class NationData {
 			notable = "notable";
 		}
 		String categoryDescription = Categories.parse(this.category).getDescription();
-		String legi = this.legislation.replaceAll("@@NAME@@", this.name)
-				.replaceAll("@@ANIMAL@@", this.animal);
+		String legi = this.legislation;
+		String[] repl = new String[] {
+				"@@NAME@@", this.name,
+				"@@ANIMAL@@", this.animal,
+				"@@CAPITAL@@", this.capital,
+				"@@CURRENCY@@", this.currency,
+				"@@LEADER@@", this.leader,
+				"@@REGION@@", this.region,
+				"@@RELIGION@@", this.religion
+		};
+		int len = repl.length;
+		for(int i=0; i<len; i+=2) {
+			if(repl[i+1] != null) {
+				legi = legi.replaceAll(repl[i], repl[i+1]);
+			}
+		}
 		return this.fullName + " is a " + size + ", " + this.admirable + " nation, " +
 				(this.leader != null ? "ruled by " + this.leader + " with a fair hand and " : "") +
 				notable + " for its " + this.notable + ". " + "Its " + this.sensibilities +

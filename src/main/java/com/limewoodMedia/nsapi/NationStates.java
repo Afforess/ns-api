@@ -1190,7 +1190,7 @@ public class NationStates {
 	 */
 	public NSData getInfo(InputStream stream) throws XmlPullParserException, IOException {
 		KXmlParser xpp = new KXmlParser();
-		xpp.setInput(stream, null);
+		xpp.setInput(stream, "ISO-8859-15");
 		return new NSData(xpp, stream);
 	}
 }
