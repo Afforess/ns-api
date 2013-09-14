@@ -33,6 +33,9 @@ import com.limewoodMedia.nsapi.exceptions.UnknownNationException;
 import com.limewoodMedia.nsapi.exceptions.UnknownRegionException;
 import com.limewoodMedia.nsapi.holders.Budget;
 import com.limewoodMedia.nsapi.holders.Embassy;
+import com.limewoodMedia.nsapi.holders.HappeningData;
+import com.limewoodMedia.nsapi.holders.HappeningData.EventHappening;
+import com.limewoodMedia.nsapi.holders.HappeningData.ViewType;
 import com.limewoodMedia.nsapi.holders.NSData;
 import com.limewoodMedia.nsapi.holders.NationData;
 import com.limewoodMedia.nsapi.holders.NationFreedoms;
@@ -46,6 +49,7 @@ import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
 import com.limewoodMedia.nsapi.holders.WAVotes;
 import com.limewoodMedia.nsapi.holders.WorldData;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -257,6 +261,140 @@ public class NationStates {
 	}
 
 	/**
+	 * Gets the happening information from the world
+	 * 
+	 * @param filters to filter the happening information gathered
+	 * @return happening data
+	 */
+	public HappeningData getHappeningInfo(HappeningData.Filter ...filters) {
+		return getHappeningInfo(null, -1, -1, filters);
+	}
+
+	/**
+	 * Gets the happening information from the world
+	 * 
+	 * @param view confine results to a specific nation or region of nations to gather happenings on (optional, may be null)
+	 * @param filters to filter the happening information gathered
+	 * @return happening data
+	 */
+	public HappeningData getHappeningInfo(ViewType view, HappeningData.Filter ...filters) {
+		return getHappeningInfo(view, -1, -1, filters);
+	}
+
+	/**
+	 * Gets the happening information from the world
+	 * 
+	 * @param view confine results to a specific nation or region of nations to gather happenings on (optional, may be null)
+	 * @param sinceId restrict results to happenings since the event id, or -1 for no restriction
+	 * @param filters to filter the happening information gathered
+	 * @return happening data
+	 */
+	public HappeningData getHappeningInfo(ViewType view, int sinceId, HappeningData.Filter ...filters) {
+		return getHappeningInfo(view, -1, sinceId, filters);
+	}
+
+	/**
+	 * Gets the happening information from the world
+	 * 
+	 * @param view confine results to a specific nation or region of nations to gather happenings on (optional, may be null)
+	 * @param limit the number of happening results to be returned, or -1 for no limit
+	 * @param sinceId restrict results to happenings since the event id, or -1 for no restriction
+	 * @param filters to filter the happening information gathered
+	 * @return happening data
+	 */
+	public HappeningData getHappeningInfo(ViewType view, int limit, int sinceId, HappeningData.Filter ...filters) {
+		if (!makeCall()) {
+			throw new RateLimitReachedException();
+		}
+		NSData data = null;
+		try {
+			String viewFragment = (view != null ? view.toString() + ";" : "");
+			String limitFragment = (limit != -1 ? "limit=" + limit + ";" : "");
+			String sinceFragment = (sinceId != -1 ? "sinceid=" + sinceId + ";" : "");
+
+			//TODO: A real fix for the invalid XML characters
+			String xml = convertStreamToString(doRequest(API + "?q=happenings;" + viewFragment + limitFragment + sinceFragment + buildShardString(filters)));
+			int index = xml.indexOf("<TEXT>");
+			while(index > -1) {
+				int end = xml.indexOf("</TEXT>", index + 6);
+				String line = xml.substring(index + 6, end);
+				line = line.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+				xml = xml.substring(0, index + 6) + line + xml.substring(end);
+				index = xml.indexOf("<TEXT>", end + 7);
+			}
+
+			data = getInfo(new ByteArrayInputStream(xml.getBytes("ISO-8859-15")));
+			XmlPullParser xpp = null;
+			xpp = data.xpp;
+			xpp.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", relaxed);
+			xpp.defineEntityReplacementText("<a href='", "&lt;a href=&quot;");
+			xpp.defineEntityReplacementText("'>", "&quot;&gt;");
+			String tagName = null;
+			HappeningData events = new HappeningData();
+			while (xpp.next() != XmlPullParser.END_DOCUMENT) {
+				switch (xpp.getEventType()) {
+				case XmlPullParser.START_TAG:
+					tagName = xpp.getName().toLowerCase();
+					if (verbose) {
+						System.out.println("Parsing happenings Tag: " + tagName);
+					}
+					if (tagName.equals("happenings")) {
+						events.happenings = parseWorldHappenings(xpp).toArray(new EventHappening[0]);
+					}
+				}
+			}
+			return events;
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException("Failed to parse XML", e);
+		} catch (IOException e) {
+			throw new RuntimeException("IOException parsing XML", e);
+		}
+		finally {
+			closeQuietly(data);
+		}
+	}
+
+	private List<EventHappening> parseWorldHappenings(XmlPullParser xpp)	throws NumberFormatException, XmlPullParserException, IOException {
+		String tagName = null;
+		long ts = -1L;
+		String text = null;
+		int eventId = -1;
+		ArrayList<EventHappening> happenings = new ArrayList<EventHappening>();
+		loop: while (xpp.next() != XmlPullParser.END_DOCUMENT) {
+			switch (xpp.getEventType()) {
+			case XmlPullParser.START_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals("event")) {
+					//Get the event id
+					eventId = Integer.parseInt(xpp.getAttributeValue(0));
+					// Get timestamp
+					xpp.nextTag();
+					ts = Long.parseLong(xpp.nextText());
+					// Get text
+					xpp.nextTag();
+					text = xpp.nextText();
+
+					happenings.add(new EventHappening(ts, text, eventId));
+				}
+				break;
+			case XmlPullParser.END_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals("HAPPENINGS")) {
+					break loop;
+				}
+			}
+		}
+		return happenings;
+	}
+
+	private static void closeQuietly(NSData data) {
+		if (data != null) {
+			try { data.stream.close(); }
+			catch (Exception ignore) { }
+		}
+	}
+
+	/**
 	* Fetches information on the world
 	* @param arguments the shards to request
 	* @return a WorldData object with world info
@@ -327,14 +465,7 @@ public class NationStates {
 			throw new RuntimeException("IOException parsing XML", e);
 		}
 		finally {
-			if (data != null) {
-				try {
-					data.stream.close();
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			closeQuietly(data);
 		}
 	}
 
@@ -396,14 +527,7 @@ public class NationStates {
 			throw new RuntimeException("IOException parsing XML", e);
 		}
 		finally {
-			if (data != null) {
-				try {
-					data.stream.close();
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			closeQuietly(data);
 		}
 	}
 
@@ -649,14 +773,7 @@ public class NationStates {
 			throw new RuntimeException("IOException parsing XML", e);
 		}
 		finally {
-			if (data != null) {
-				try {
-					data.stream.close();
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			closeQuietly(data);
 		}
 	}
 
@@ -960,13 +1077,7 @@ public class NationStates {
 			throw new RuntimeException("IOException parsing XML", e);
 		}
 		finally {
-			if(data != null) {
-				try {
-					data.stream.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			closeQuietly(data);
 		}
 	}
 
@@ -1142,6 +1253,14 @@ public class NationStates {
 	 * @throws IOException if there was a network problem
 	 */
 	private NSData getInfo(String urlStart, IShards...shards) throws XmlPullParserException, IOException {
+		String shardsStr = buildShardString(shards);
+		String str = API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
+				"&q=" + shardsStr;
+
+		return getInfo(doRequest(str));
+	}
+
+	private String buildShardString(IShards...shards) {
 		String shardsStr = null;
 		for (IShards s : shards) {
 			if(shardsStr == null) {
@@ -1156,10 +1275,7 @@ public class NationStates {
 				}
 			}
 		}
-		String str = API + urlStart + (this.version > -1 ? "&v=" + this.version : "") +
-				"&q=" + shardsStr;
-
-		return getInfo(doRequest(str));
+		return shardsStr;
 	}
 
 	private synchronized InputStream doRequest(String url) throws IOException {
