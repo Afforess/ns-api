@@ -311,19 +311,7 @@ public class NationStates {
 			String viewFragment = (view != null ? view.toString() + ";" : "");
 			String limitFragment = (limit != -1 ? "limit=" + limit + ";" : "");
 			String sinceFragment = (sinceId != -1 ? "sinceid=" + sinceId + ";" : "");
-
-			//TODO: A real fix for the invalid XML characters
-			String xml = convertStreamToString(doRequest(API + "?q=happenings;" + viewFragment + limitFragment + sinceFragment + buildShardString(filters)));
-			int index = xml.indexOf("<TEXT>");
-			while(index > -1) {
-				int end = xml.indexOf("</TEXT>", index + 6);
-				String line = xml.substring(index + 6, end);
-				line = line.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-				xml = xml.substring(0, index + 6) + line + xml.substring(end);
-				index = xml.indexOf("<TEXT>", end + 7);
-			}
-
-			data = getInfo(new ByteArrayInputStream(xml.getBytes("ISO-8859-15")));
+			data = getInfo(doRequest(API + "?q=happenings;" + viewFragment + limitFragment + sinceFragment + buildShardString(filters)));
 			XmlPullParser xpp = null;
 			xpp = data.xpp;
 			xpp.setFeature("http://xmlpull.org/v1/doc/features.html#relaxed", relaxed);
