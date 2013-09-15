@@ -49,7 +49,6 @@ import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
 import com.limewoodMedia.nsapi.holders.WAVotes;
 import com.limewoodMedia.nsapi.holders.WorldData;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -200,7 +199,7 @@ public class NationStates {
 	 */
 	private synchronized boolean makeCall() throws IllegalArgumentException {
 		if (this.userAgent == null) {
-			throw new IllegalArgumentException("No User-Agent set! Use NSAPI.getInstance().setUserAgent(String).");
+			throw new IllegalArgumentException("No User-Agent set! Use setUserAgent(String).");
 		}
 		if (hardRateLimit > System.currentTimeMillis()) {
 			return false;
@@ -243,6 +242,9 @@ public class NationStates {
 	 */
 	public boolean verifyNation(String nation, String checksum, String token) {
 		try {
+			if (!makeCall()) {
+				throw new RateLimitReachedException();
+			}
 			InputStream stream = doRequest(API + "?a=verify&nation=" + nation.toLowerCase().replaceAll(" ", "_") + "&checksum=" + checksum + (token != null ? "&token=" + token : ""));
 			return "1".equals(convertStreamToString(stream).trim());
 		} catch (IOException e) {
