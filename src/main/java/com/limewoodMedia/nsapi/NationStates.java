@@ -52,15 +52,12 @@ import com.limewoodMedia.nsapi.holders.WorldData;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -85,7 +82,7 @@ public class NationStates {
 		
 	}
 
-	private final Queue<Date> calls = new ConcurrentLinkedQueue<Date>();
+	private final LinkedList<Long> calls = new LinkedList<Long>();
 	private int rateLimit = DEFAULT_RATE_LIMIT;
 	private boolean useRateLimit = true;
 	private String userAgent = null;
@@ -197,25 +194,21 @@ public class NationStates {
 	 * @return true if it's OK to make a call to the NS API
 	 * @throws IllegalArgumentException if no User-Agent was set
 	 */
-	private synchronized boolean makeCall() throws IllegalArgumentException {
+	protected synchronized boolean makeCall() throws IllegalArgumentException {
 		if (this.userAgent == null) {
 			throw new IllegalArgumentException("No User-Agent set! Use setUserAgent(String).");
 		}
 		if (hardRateLimit > System.currentTimeMillis()) {
 			return false;
 		}
-		if (this.calls.size() < rateLimit) {
-			this.calls.add(new Date());
-			return true;
-		}
-		Calendar thirty = Calendar.getInstance();
-		thirty.add(Calendar.SECOND, -30);
-		Date now = thirty.getTime();
-		for (Date d = this.calls.peek(); !this.calls.isEmpty() && d.before(now); d = this.calls.peek()) {
-			this.calls.poll();
+		Iterator<Long> i = this.calls.iterator();
+		while(i.hasNext()) {
+			if (i.next() + 30000L < System.currentTimeMillis()) {
+				i.remove();
+			}
 		}
 		if (this.calls.size() < rateLimit) {
-			this.calls.add(new Date());
+			this.calls.add(System.currentTimeMillis());
 			return true;
 		}
 		return false;
