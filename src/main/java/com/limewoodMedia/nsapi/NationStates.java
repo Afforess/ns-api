@@ -58,10 +58,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.params.ClientPNames;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreProtocolPNames;
 import org.kxml2.io.KXmlParser;
@@ -90,6 +93,8 @@ public class NationStates {
 	private boolean verbose = false;
 	private boolean relaxed = false;
 	private long hardRateLimit = 0;
+	private String proxyIP;
+	private int proxyPort;
 
 	/**
 	 * Sets the rate limit - default is 49 (per 30 seconds)
@@ -169,6 +174,22 @@ public class NationStates {
 	public synchronized int getVersion() {
 		return version;
 	}
+	
+	public synchronized String getProxyIP() {
+		return proxyIP;
+	}
+	
+	public synchronized void setProxyIP(String ip) {
+		proxyIP = ip;
+	}
+	
+	public synchronized int getProxyPort() {
+		return proxyPort;
+	}
+	
+	public synchronized void setProxyPort(int port) {
+		this.proxyPort = port;
+	}
 
 	/**
 	 * In relaxed mode the XML parsing attempts to correct any invalid xml characters it encounters
@@ -214,6 +235,19 @@ public class NationStates {
 		return false;
 	}
 
+	public synchronized int getRateLimitRemaining() {
+		if (hardRateLimit > System.currentTimeMillis()) {
+			return 0;
+		}
+		Iterator<Long> i = this.calls.iterator();
+		while(i.hasNext()) {
+			if (i.next() + 30000L < System.currentTimeMillis()) {
+				i.remove();
+			}
+		}
+		return rateLimit - this.calls.size();
+	}
+
 	/**
 	 * Verifies the nation checksum with nationstates authentication
 	 * 
@@ -255,6 +289,25 @@ public class NationStates {
 	    }
 	}
 
+	/**
+	 * Sets a telegram with the NationStates telegram API
+	 * @param clientKey to use
+	 * @param secretKey of the telegram
+	 * @param tgid of the telegram to send
+	 * @param nation to send the telegram to
+	 * 
+	 * @return telegram api result
+	 */
+	public String sendTelegram(String clientKey, String secretKey, String tgid, String nation) {
+		if (!makeCall()) {
+			throw new RateLimitReachedException();
+		}
+		try {
+			return convertStreamToString(doRequest("http://www.nationstates.net/cgi-bin/api.cgi?a=sendTG&client=" + clientKey + "&tgid=" + tgid + "&key=" + secretKey + "&to=" + nation));
+		}  catch (IOException e) {
+			throw new RuntimeException("IOException sending telegram", e);
+		}
+	}
 	/**
 	 * Gets the happening information from the world
 	 * 
@@ -1267,6 +1320,10 @@ public class NationStates {
 		}
 
 		HttpClient client = new DefaultHttpClient();
+		if (proxyIP != null) {
+			HttpHost proxy = new HttpHost(proxyIP, proxyPort);
+			client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+		}
 		client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
 		client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
 		HttpGet get = new HttpGet(url);
