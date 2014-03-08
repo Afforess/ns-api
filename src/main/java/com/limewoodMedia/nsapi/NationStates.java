@@ -888,7 +888,9 @@ public class NationStates {
 				if (tagName.equals(NationData.Shards.SubTags.LEGISLATION_LAW.getTag())) {
 					if (legislation == null) {
 						legislation = xpp.nextText();
-						legislation = legislation.substring(0, 1).toUpperCase() + legislation.substring(1);
+						if (legislation.trim().length() > 0) {
+							legislation = legislation.substring(0, 1).toUpperCase() + legislation.substring(1);
+						}
 					}
 					else {
 						legislation += "||&&|| " + xpp.nextText();
@@ -898,7 +900,9 @@ public class NationStates {
 			case XmlPullParser.END_TAG:
 				tagName = xpp.getName().toLowerCase();
 				if (tagName.equals(NationData.Shards.LEGISLATION.getTag())) {
-					legislation += ". ";
+					if(legislation.length() > 0) {
+						legislation += ". ";
+					}
 					break loop;
 				}
 				break;
