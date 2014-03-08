@@ -46,6 +46,7 @@ import com.limewoodMedia.nsapi.holders.RegionHappening;
 import com.limewoodMedia.nsapi.holders.WAData;
 import com.limewoodMedia.nsapi.holders.WAHappening;
 import com.limewoodMedia.nsapi.holders.WAMemberLogHappening;
+import com.limewoodMedia.nsapi.holders.WAResolution;
 import com.limewoodMedia.nsapi.holders.WAVotes;
 import com.limewoodMedia.nsapi.holders.WorldData;
 
@@ -550,6 +551,10 @@ public class NationStates {
 						// TODO FIXME This tag can contain invalid xml!
 						wa.lastResolution = xpp.nextText();
 					}
+					else if (tagName.equals(WAData.Shards.RESOLUTION.getTag())) {
+						wa.resolution = parseResolution(xpp);
+						wa.resolution.council = council;
+					}
 					else if (verbose) {
 						System.err.println("Unknown WA tag: " + tagName);
 					}
@@ -565,6 +570,40 @@ public class NationStates {
 		finally {
 			closeQuietly(data);
 		}
+	}
+
+	private WAResolution parseResolution(XmlPullParser xpp) throws XmlPullParserException, IOException {
+		WAResolution res = new WAResolution();
+		String tagName = null;
+		while (xpp.next() != XmlPullParser.END_DOCUMENT) {
+			switch (xpp.getEventType()) {
+			case XmlPullParser.START_TAG:
+				tagName = xpp.getName().toLowerCase();
+				if (tagName.equals(WAResolution.SubTags.CATEGORY.getTag())) {
+					res.category = xpp.nextText();
+				}
+				else if (tagName.equals(WAResolution.SubTags.CREATED.getTag())) {
+					res.created = Integer.parseInt(xpp.nextText());
+				}
+				else if (tagName.equals(WAResolution.SubTags.DESCRIPTION.getTag())) {
+					res.description = xpp.nextText();
+				}
+				else if (tagName.equals(WAResolution.SubTags.NAME.getTag())) {
+					res.name = xpp.nextText();
+				}
+				else if (tagName.equals(WAResolution.SubTags.PROPOSED_BY.getTag())) {
+					res.proposedBy = xpp.nextText();
+				}
+				else if (tagName.equals(WAResolution.SubTags.VOTES_AGAINST.getTag())) {
+					res.votesAgainst = Integer.parseInt(xpp.nextText());
+				}
+				else if (tagName.equals(WAResolution.SubTags.VOTES_FOR.getTag())) {
+					res.votesFor = Integer.parseInt(xpp.nextText());
+				}
+				break;
+			}
+		}
+		return res;
 	}
 
 	private List<WAHappening> parseWAHappenings(XmlPullParser xpp)

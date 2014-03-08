@@ -44,8 +44,9 @@ public class WAData {
 		MEMBERS("members"),
 		HAPPENINGS("happenings"),
 		MEMBER_LOG("memberlog"),
-		LAST_RESOLUTION("lastresolution");
-		// Missing resolution, votetrack, dellog, delvotes
+		LAST_RESOLUTION("lastresolution"),
+		RESOLUTION("resolution");
+		// Missing votetrack, dellog, delvotes
 		
 		private String name;
 		private String tag;
@@ -120,7 +121,8 @@ public class WAData {
 	public List<WAHappening> happenings;
 	public List<WAMemberLogHappening> memberLog;
 	public String lastResolution;
-	
+	public WAResolution resolution;
+
 	@Override
 	public String toString() {
 		String str = "World Assembly"
