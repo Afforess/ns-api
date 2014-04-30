@@ -260,7 +260,7 @@ public class NationData {
 	public String lastActivity;
 	public long lastLogin;
 	public String influence;
-	public int publicSector;
+	public float publicSector;
 	public Map<CauseOfDeath, Integer> deaths;
 	public String capital;
 	public int regionalCensus;

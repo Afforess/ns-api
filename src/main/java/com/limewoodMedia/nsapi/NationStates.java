@@ -813,7 +813,7 @@ public class NationStates {
 					}
 					else if (tagName.equals(NationData.Shards.PUBLIC_SECTOR.getTag())) {
 						String str = xpp.nextText();
-						nation.publicSector = Integer.parseInt(str.substring(0, str.length() - 1));
+						nation.publicSector = Float.parseFloat(str);
 					}
 					else if (tagName.equals(NationData.Shards.DEATHS.getTag())) {
 						nation.deaths = parseDeaths(xpp);
