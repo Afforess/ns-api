@@ -987,7 +987,7 @@ public class NationStates {
 		throws XmlPullParserException, IOException {
 		String tagName = null;
 		String str = null;
-		int value = -1;
+		float value = -1;
 		Budget budget = new Budget();
 		loop: while (xpp.next() != XmlPullParser.END_DOCUMENT)
 			switch (xpp.getEventType()) {
@@ -995,7 +995,7 @@ public class NationStates {
 				tagName = xpp.getName().toLowerCase();
 				str = xpp.nextText();
 				// Get value without %-sign
-				value = Integer.parseInt(str.substring(0, str.length() - 1));
+				value = Float.parseFloat(str);
 				if (tagName.equals(NationData.Shards.SubTags.BUDGET_ENVIRONMENT.getTag())) {
 					budget.environment = value;
 				}

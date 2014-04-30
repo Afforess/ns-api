@@ -29,17 +29,17 @@ package com.limewoodMedia.nsapi.holders;
  *
  */
 public class Budget {
-	public int environment;
-	public int socialEquality;
-	public int education;
-	public int lawAndOrder;
-	public int administration;
-	public int welfare;
-	public int spirituality;
-	public int defence;
-	public int publicTransport;
-	public int healthCare;
-	public int commerce;
+	public float environment;
+	public float socialEquality;
+	public float education;
+	public float lawAndOrder;
+	public float administration;
+	public float welfare;
+	public float spirituality;
+	public float defence;
+	public float publicTransport;
+	public float healthCare;
+	public float commerce;
 
 	@Override
 	public String toString() {
