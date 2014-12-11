@@ -67,7 +67,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -96,6 +99,7 @@ public class NationStates {
 	private long hardRateLimit = 0;
 	private String proxyIP;
 	private int proxyPort;
+	private long timeout = 15000;
 
 	/**
 	 * Sets the rate limit - default is 49 (per 30 seconds)
@@ -190,6 +194,14 @@ public class NationStates {
 	
 	public synchronized void setProxyPort(int port) {
 		this.proxyPort = port;
+	}
+	
+	public synchronized long getTimeout() {
+		return timeout;
+	}
+
+	public synchronized void setTimeout(long timeout) {
+		this.timeout = timeout;
 	}
 
 	/**
@@ -1362,11 +1374,14 @@ public class NationStates {
 			System.out.println("Making HTTP request: " + url);
 		}
 
-		HttpClient client = new DefaultHttpClient();
+		final HttpParams httpParams = new BasicHttpParams();
+		HttpClient client = new DefaultHttpClient(httpParams);
 		if (proxyIP != null) {
 			HttpHost proxy = new HttpHost(proxyIP, proxyPort);
 			client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
 		}
+		HttpConnectionParams.setConnectionTimeout(client.getParams(), (int) timeout);
+		HttpConnectionParams.setSoTimeout(client.getParams(), (int) timeout);
 		client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, this.userAgent);
 		client.getParams().setParameter(ClientPNames.ALLOW_CIRCULAR_REDIRECTS, true);
 		HttpGet get = new HttpGet(url);
